@@ -2353,15 +2353,81 @@ function appendAiMessage(role, content) {
 }
 
 function renderAiOutput(content, target = $('#aiOutput')) {
-  const safe = escapeHtml(content || '暂无输出');
-  target.innerHTML = safe
-    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
-    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-    .replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
-    .replace(/^\|\s*(.+)\s*\|$/gm, '<div class="ai-table-line">$1</div>')
-    .replace(/^- (.+)$/gm, '<p class="ai-bullet">• $1</p>')
-    .replace(/\n{2,}/g, '<br><br>')
-    .replace(/\n/g, '<br>');
+  target.innerHTML = formatAiMarkdown(content || '暂无输出');
+}
+
+function formatAiMarkdown(content) {
+  const lines = String(content || '').replace(/\r\n/g, '\n').split('\n');
+  const html = [];
+  let list = [];
+  const flushList = () => {
+    if (!list.length) return;
+    html.push(`<ul class="ai-list">${list.map((item) => `<li>${formatInlineMarkdown(item)}</li>`).join('')}</ul>`);
+    list = [];
+  };
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (!line) {
+      flushList();
+      continue;
+    }
+    if (/^-{3,}$/.test(line)) {
+      flushList();
+      html.push('<hr class="ai-divider">');
+      continue;
+    }
+    if (line.startsWith('|')) {
+      flushList();
+      const tableLines = [];
+      while (index < lines.length && lines[index].trim().startsWith('|')) {
+        tableLines.push(lines[index].trim());
+        index += 1;
+      }
+      index -= 1;
+      html.push(formatAiTable(tableLines));
+      continue;
+    }
+    const heading = line.match(/^(#{1,4})\s+(.+)$/) || line.match(/^(第[一二三四五六七八九十\d]+天[:：].*)$/);
+    if (heading) {
+      flushList();
+      const text = heading[2] || heading[1];
+      const level = heading[1]?.startsWith('#') && heading[1].length >= 3 ? 'h3' : 'h2';
+      html.push(`<${level}>${formatInlineMarkdown(text)}</${level}>`);
+      continue;
+    }
+    const bullet = line.match(/^([*+\-]|[0-9]+[.、])\s*(.+)$/);
+    if (bullet) {
+      list.push(bullet[2]);
+      continue;
+    }
+    flushList();
+    html.push(`<p>${formatInlineMarkdown(line)}</p>`);
+  }
+  flushList();
+  return html.join('');
+}
+
+function formatAiTable(lines) {
+  const rows = lines
+    .map((line) => line.replace(/^\||\|$/g, '').split('|').map((cell) => cell.trim()))
+    .filter((cells) => cells.length && !cells.every((cell) => /^:?-{2,}:?$/.test(cell)));
+  if (!rows.length) return '';
+  const [head, ...body] = rows;
+  return `
+    <div class="ai-table-wrap">
+      <table class="ai-table">
+        <thead><tr>${head.map((cell) => `<th>${formatInlineMarkdown(cell)}</th>`).join('')}</tr></thead>
+        <tbody>${body.map((row) => `<tr>${row.map((cell) => `<td>${formatInlineMarkdown(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function formatInlineMarkdown(value) {
+  return escapeHtml(value)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 function typeLabel(type) {
