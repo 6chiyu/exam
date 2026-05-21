@@ -2271,9 +2271,14 @@ function formatWrongbookForAi(items) {
 
 function bindAiTemplates() {
   $$('[data-ai-template]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       const current = $('#aiPrompt').value.trim();
-      const template = formatAiTemplate(button.dataset.aiTemplate, button.textContent.trim());
+      const label = button.textContent.trim();
+      if (label === '错题复盘' || label === '閿欓澶嶇洏') {
+        await aiAnalyzeWrongbook();
+        return;
+      }
+      const template = formatAiTemplate(button.dataset.aiTemplate, label);
       setAiPromptValue(current ? `${template}\n\n【我的内容】\n${current}` : template);
     });
   });

@@ -7,6 +7,8 @@ const html = fs.readFileSync(path.join(root, 'v5', 'index.html'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'v5', 'assets', 'js', 'v5-app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'v5', 'assets', 'css', 'v5-app.css'), 'utf8');
 
+new Function(js);
+
 function mustInclude(source, text, label) {
   if (!source.includes(text)) {
     throw new Error(`${label} missing ${text}`);
@@ -170,6 +172,7 @@ function extractFunction(source, name) {
   'bindAiTemplates',
   'formatAiTemplate',
   'formatWrongbookForAi',
+  'await aiAnalyzeWrongbook();',
   'autoResizeAiPrompt',
   'appendAiMessage',
   'renderAiOutput',
