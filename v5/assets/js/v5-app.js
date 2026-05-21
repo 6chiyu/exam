@@ -12,6 +12,7 @@ const DEFAULT_KEYBOARD_SETTINGS = {
 };
 
 const WRONGBOOK_PAGE_SIZE = 5;
+const EMAIL_CODE_COOLDOWN_SECONDS = 60;
 
 const HEAD_PORTRAIT_ASSETS = [
   '../assets/head%20portrait/1.jpg',
@@ -45,6 +46,8 @@ const appState = {
   importPreviewIndex: 0,
   editingPaper: null,
   authCaptchaId: '',
+  authEmailCooldownUntil: Number(localStorage.getItem('exam_v5_email_cooldown_until') || 0),
+  authEmailCooldownTimer: null,
   aiAccount: null,
   paymentOrder: null,
   startedAt: 0,
@@ -75,6 +78,7 @@ function init() {
   renderShortcutCard();
   document.addEventListener('keydown', handlePracticeKeydown);
   updateUserLabel();
+  renderAuthEmailCooldown();
   routeTo(location.hash.replace('#', '') || 'home');
   if (appState.token) {
     refreshAll();
@@ -247,6 +251,10 @@ async function submitAuth() {
 async function sendAuthEmailCode() {
   const email = $('#authEmail')?.value.trim() || '';
   const captchaCode = $('#authCaptchaCode')?.value.trim() || '';
+  if (getAuthEmailCooldownRemaining() > 0) {
+    toast(`验证码已发送，请 ${getAuthEmailCooldownRemaining()} 秒后再试。`, true);
+    return;
+  }
   if (!/^[A-Za-z0-9._%+\-]{3,64}@qq\.com$/i.test(email)) {
     toast('请填写 QQ 邮箱，例如 123456@qq.com。', true);
     return;
@@ -264,12 +272,42 @@ async function sendAuthEmailCode() {
     });
     if (result.dev_code && $('#authEmailCode')) $('#authEmailCode').value = result.dev_code;
     toast(result.dev_code ? `本地开发验证码：${result.dev_code}` : '验证码已发送，请查看 QQ 邮箱。');
+    startAuthEmailCooldown(EMAIL_CODE_COOLDOWN_SECONDS);
     await refreshAuthCaptcha();
   } catch (error) {
     toast(error.message, true);
   } finally {
-    if (button) button.disabled = false;
+    renderAuthEmailCooldown();
   }
+}
+
+function getAuthEmailCooldownRemaining() {
+  return Math.max(0, Math.ceil((Number(appState.authEmailCooldownUntil || 0) - Date.now()) / 1000));
+}
+
+function startAuthEmailCooldown(seconds = EMAIL_CODE_COOLDOWN_SECONDS) {
+  appState.authEmailCooldownUntil = Date.now() + seconds * 1000;
+  localStorage.setItem('exam_v5_email_cooldown_until', String(appState.authEmailCooldownUntil));
+  renderAuthEmailCooldown();
+}
+
+function renderAuthEmailCooldown() {
+  const button = $('#authSendCode');
+  if (!button) return;
+  if (appState.authEmailCooldownTimer) {
+    clearTimeout(appState.authEmailCooldownTimer);
+    appState.authEmailCooldownTimer = null;
+  }
+  const remaining = getAuthEmailCooldownRemaining();
+  if (remaining > 0) {
+    button.disabled = true;
+    button.textContent = `${remaining}s 后重发`;
+    appState.authEmailCooldownTimer = setTimeout(renderAuthEmailCooldown, 1000);
+    return;
+  }
+  button.disabled = false;
+  button.textContent = '发送验证码';
+  localStorage.removeItem('exam_v5_email_cooldown_until');
 }
 
 async function refreshAuthCaptcha() {
@@ -315,11 +353,7 @@ function logoutCurrentUser() {
   localStorage.removeItem('exam_v5_user');
   closePaperEditor();
   setPracticeVisible(false);
-  updateUserLabel();
-  renderGuestState();
-  renderBankGroups();
-  renderEmptyStats();
-  routeTo('home');
+  location.href = '../index.html';
   toast('已退出登录。');
 }
 

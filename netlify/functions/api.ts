@@ -7,8 +7,9 @@ import path from 'node:path';
 const FREE_AI_CREDITS = 5;
 const AI_CREDITS_PER_YUAN = 40;
 const EMAIL_CODE_TTL_SECONDS = 10 * 60;
+const EMAIL_CODE_COOLDOWN_SECONDS = 60;
 const CAPTCHA_TTL_SECONDS = 5 * 60;
-const CAPTCHA_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const CAPTCHA_CHARS = '0123456789';
 const INITIAL_BANK_TITLE = '计算机网络基础初始题库';
 const INITIAL_BANK_CATEGORY = '计算机网络';
 const INITIAL_BANK_GROUP = '系统初始题库';
@@ -220,7 +221,7 @@ async function login(username: string, password: string) {
 }
 
 async function createCaptcha(includeDevCode = false) {
-  const code = Array.from({ length: 4 }, () => CAPTCHA_CHARS[crypto.randomInt(CAPTCHA_CHARS.length)]).join('');
+  const code = Array.from({ length: 5 }, () => CAPTCHA_CHARS[crypto.randomInt(CAPTCHA_CHARS.length)]).join('');
   const salt = randomHex(8);
   const svg = renderCaptchaSvg(code);
   const captcha = {
@@ -246,6 +247,17 @@ async function createCaptcha(includeDevCode = false) {
 async function createEmailVerification(emailValue: string, options: any = {}) {
   const email = normalizeEmail(emailValue);
   if (!isQqEmail(email)) throw new AppError('请使用 QQ 邮箱接收验证码');
+  const recent = await db()
+    .from('email_verifications')
+    .select('id')
+    .eq('email', email)
+    .eq('purpose', 'register')
+    .is('used_at', null)
+    .gt('expires_at', nowSeconds() + EMAIL_CODE_TTL_SECONDS - EMAIL_CODE_COOLDOWN_SECONDS)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (recent.error) throw recent.error;
+  if (recent.data?.length) throw new AppError('验证码已发送，请 60 秒后再试', 429);
   if (options.requireCaptcha) await verifyCaptcha(options.captchaId, options.captchaCode);
   const code = String(crypto.randomInt(1000000)).padStart(6, '0');
   const salt = randomHex(8);
@@ -297,7 +309,7 @@ async function verifyEmailCode(email: string, code: string, purpose = 'register'
   if (error) throw error;
   const row = data?.[0];
   if (!row || Number(row.expires_at) < nowSeconds()) throw new AppError('邮箱验证码不存在或已过期');
-  if (row.code_hash !== hashPassword(cleanText(code), row.salt)) throw new AppError('邮箱验证码错误');
+  if (row.code_hash !== hashPassword(stripCodeSpaces(code), row.salt)) throw new AppError('邮箱验证码错误');
   await checked(db().from('email_verifications').update({ used_at: utcNow() }).eq('id', row.id));
 }
 
@@ -1102,6 +1114,10 @@ function normalizeAnswer(answer: unknown) {
 
 function cleanText(value: unknown) {
   return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function stripCodeSpaces(value: unknown) {
+  return String(value || '').replace(/\s+/g, '');
 }
 
 function normalizeEmail(value: unknown) {

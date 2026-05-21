@@ -83,6 +83,7 @@ class V5BackendTest(unittest.TestCase):
 
     def test_qq_email_verification_registration_and_free_ai_quota(self):
         challenge = self.app.create_captcha(include_dev_code=True)
+        self.assertRegex(challenge['dev_code'], r'^\d{5}$')
         verification = self.app.create_email_verification(
             'student@qq.com',
             deliver=False,

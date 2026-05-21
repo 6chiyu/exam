@@ -39,6 +39,9 @@ function extractFunction(source, name) {
   '/api/email/send-code',
   '/api/captcha',
   'sendEmailCode',
+  'EMAIL_CODE_COOLDOWN_SECONDS',
+  'startEmailCooldown',
+  'renderEmailCooldown',
   'emailCode',
   '@qq.com',
   'exam_v5_token',
@@ -205,6 +208,11 @@ function extractFunction(source, name) {
   'authCaptchaCode',
   'authRefreshCaptcha'
 ].forEach((text) => mustInclude(html, text, 'html'));
+
+mustInclude(rootHtml, 'maxlength="5"', 'root html');
+mustInclude(rootHtml, 'inputmode="numeric"', 'root html');
+mustInclude(html, 'maxlength="5"', 'html');
+mustInclude(html, 'inputmode="numeric"', 'html');
 
 mustNotInclude(html, 'value="speed"', 'html');
 mustNotInclude(js, "value === 'speed'", 'js');

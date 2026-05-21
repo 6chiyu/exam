@@ -23,8 +23,9 @@ INITIAL_BANK_GROUP = '系统初始题库'
 FREE_AI_CREDITS = 5
 AI_CREDITS_PER_YUAN = 40
 EMAIL_CODE_TTL_SECONDS = 10 * 60
+EMAIL_CODE_COOLDOWN_SECONDS = 60
 CAPTCHA_TTL_SECONDS = 5 * 60
-CAPTCHA_CHARS = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
+CAPTCHA_CHARS = '0123456789'
 
 
 class AppError(Exception):
@@ -226,7 +227,7 @@ class ExamApp:
 
     def create_captcha(self, purpose='email', include_dev_code=False):
         purpose = clean_text(purpose) or 'email'
-        code = ''.join(secrets.choice(CAPTCHA_CHARS) for _ in range(4))
+        code = ''.join(secrets.choice(CAPTCHA_CHARS) for _ in range(5))
         salt = secrets.token_hex(8)
         captcha_id = new_id('captcha')
         expires_at = int(time.time()) + CAPTCHA_TTL_SECONDS
@@ -266,6 +267,17 @@ class ExamApp:
         salt = secrets.token_hex(8)
         expires_at = int(time.time()) + EMAIL_CODE_TTL_SECONDS
         with self.db() as conn:
+            recent = conn.execute(
+                """
+                SELECT id FROM email_verifications
+                WHERE email = ? AND purpose = ? AND used_at IS NULL AND expires_at > ?
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (email, purpose, int(time.time()) + EMAIL_CODE_TTL_SECONDS - EMAIL_CODE_COOLDOWN_SECONDS)
+            ).fetchone()
+            if recent:
+                raise AppError('验证码已发送，请 60 秒后再试', 429)
             if require_captcha:
                 self._verify_captcha(conn, captcha_id, captcha_code, 'email')
             conn.execute(
@@ -378,7 +390,7 @@ class ExamApp:
         return public_user(row)
 
     def _verify_email_code(self, conn, email, code, purpose='register'):
-        code = clean_text(code)
+        code = re.sub(r'\s+', '', str(code or ''))
         now_ts = int(time.time())
         row = conn.execute(
             """
