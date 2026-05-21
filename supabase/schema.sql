@@ -34,10 +34,10 @@ create table if not exists public.questions (
   paper_id text not null references public.papers(id) on delete cascade,
   type text not null,
   question text not null,
-  options_json jsonb not null default '[]'::jsonb,
+  options_json jsonb not null,
   answer text not null,
   analysis text not null default '',
-  tags_json jsonb not null default '[]'::jsonb,
+  tags_json jsonb not null,
   score numeric not null default 1,
   position integer not null default 0
 );
@@ -131,7 +131,7 @@ create table if not exists public.payment_orders (
   credits integer not null,
   status text not null,
   payment_url text not null default '',
-  metadata_json jsonb not null default '{}'::jsonb,
+  metadata_json jsonb not null,
   created_at timestamptz not null default now(),
   paid_at timestamptz
 );
