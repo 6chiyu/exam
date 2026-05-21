@@ -65,6 +65,8 @@ const secretPattern = /sk-[A-Za-z0-9]{20,}|QQ_SMTP_AUTH_CODE\s*=\s*[a-z0-9]{12,}
   '计算机网络基础初始题库',
   '/api/register',
   '/api/login',
+  '/api/password/send-reset-code',
+  '/api/password/reset',
   '/api/captcha',
   '/api/email/send-code',
   '/api/papers',

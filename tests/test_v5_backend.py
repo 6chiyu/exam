@@ -147,6 +147,55 @@ class V5BackendTest(unittest.TestCase):
         with self.assertRaises(exam_core.AppError):
             self.app.ensure_ai_credit(token)
 
+    def test_reset_password_with_qq_email_code(self):
+        challenge = self.app.create_captcha(include_dev_code=True)
+        verification = self.app.create_email_verification(
+            'resetter@qq.com',
+            deliver=False,
+            captcha_id=challenge['id'],
+            captcha_code=challenge['dev_code'],
+            require_captcha=True
+        )
+        self.app.register(
+            'resetter',
+            'OldStrongPass123',
+            'Resetter',
+            email='resetter@qq.com',
+            email_code=verification['dev_code'],
+            require_email=True
+        )
+
+        reset_challenge = self.app.create_captcha(include_dev_code=True)
+        reset_code = self.app.create_password_reset_verification(
+            'resetter@qq.com',
+            deliver=False,
+            captcha_id=reset_challenge['id'],
+            captcha_code=reset_challenge['dev_code'],
+            require_captcha=True
+        )
+        self.assertEqual(reset_code['email'], 'resetter@qq.com')
+        self.assertIn('dev_code', reset_code)
+
+        fresh_challenge = self.app.create_captcha(include_dev_code=True)
+        with self.assertRaises(exam_core.AppError) as cooldown_error:
+            self.app.create_password_reset_verification(
+                'resetter@qq.com',
+                deliver=False,
+                captcha_id=fresh_challenge['id'],
+                captcha_code=fresh_challenge['dev_code'],
+                require_captcha=True
+            )
+        self.assertEqual(cooldown_error.exception.status, 429)
+
+        self.app.reset_password_by_email(
+            'resetter@qq.com',
+            f"{reset_code['dev_code'][:3]} {reset_code['dev_code'][3:]}",
+            'NewStrongPass456'
+        )
+        with self.assertRaises(exam_core.AppError):
+            self.app.login('resetter', 'OldStrongPass123')
+        self.assertTrue(self.app.login('resetter', 'NewStrongPass456')['token'])
+
     def test_alipay_ai_payment_order_supports_custom_amount(self):
         challenge = self.app.create_captcha(include_dev_code=True)
         verification = self.app.create_email_verification(
