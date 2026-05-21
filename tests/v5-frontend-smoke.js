@@ -59,6 +59,8 @@ function extractFunction(source, name) {
   'assets/backgrounds/main-page.jpg',
   'assets/characters/hero-character.png'
 ].forEach((text) => mustInclude(rootHtml, text, 'root html'));
+mustNotInclude(rootHtml, 'id="enterApp"', 'root html');
+mustNotInclude(rootHtml, '>进入 v5<', 'root html');
 
 [
   '考试酷级题库管理',

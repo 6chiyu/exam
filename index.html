@@ -351,7 +351,6 @@
 
       <div class="button-row">
         <button id="submitAuth" class="btn primary" type="button">登录</button>
-        <a id="enterApp" class="btn success" href="v5/index.html">进入 v5</a>
         <button id="logoutAuth" class="btn ghost hidden" type="button">退出登录</button>
       </div>
       <p id="status" class="status">已有账号可直接登录，新用户切换到注册。</p>
@@ -429,10 +428,9 @@
     }
 
     function syncSessionUi() {
-      $('#enterApp').href = appTarget();
       $('#logoutAuth').classList.toggle('hidden', !state.token);
       if (state.token && state.user) {
-        setStatus(`当前已登录：${state.user.nickname || state.user.username}，可以直接进入 v5。`);
+        setStatus(`当前已登录：${state.user.nickname || state.user.username}，点击登录进入 v5。`);
       }
     }
 
