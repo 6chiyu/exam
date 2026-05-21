@@ -245,6 +245,7 @@ class SupabaseRestClient:
                 'apikey': self.service_role_key,
                 'Authorization': f'Bearer {self.service_role_key}',
                 'Content-Type': 'application/json',
+                'User-Agent': 'exam-supabase-migration/1.0',
                 'Prefer': 'resolution=merge-duplicates,return=minimal'
             }
         )

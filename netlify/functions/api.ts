@@ -31,7 +31,14 @@ function db(): any {
     if (!url || !key) {
       throw new AppError('Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.', 503);
     }
-    cachedClient = createClient(url, key, { auth: { persistSession: false } }) as any;
+    cachedClient = createClient(url, key, {
+      global: { headers: { 'User-Agent': 'exam-netlify-function/1.0' } },
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false
+      }
+    }) as any;
   }
   return cachedClient;
 }
