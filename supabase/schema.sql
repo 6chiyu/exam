@@ -95,7 +95,7 @@ create table if not exists public.favorites (
 
 create table if not exists public.captcha_challenges (
   id text primary key,
-  purpose text not null default 'email',
+  purpose text not null,
   code_hash text not null,
   salt text not null,
   expires_at bigint not null,
@@ -107,7 +107,7 @@ create table if not exists public.captcha_challenges (
 create table if not exists public.email_verifications (
   id text primary key,
   email text not null,
-  purpose text not null default 'register',
+  purpose text not null,
   code_hash text not null,
   salt text not null,
   expires_at bigint not null,
