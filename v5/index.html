@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>题练云 v5 - 考试酷级题库管理与刷题平台</title>
+  <link rel="stylesheet" href="assets/css/v5-app.css">
+</head>
+<body>
+  <div class="top-announcement">考试酷级题库管理 · 考研刷题式训练节奏 · 本地 SQLite 数据库 · DeepSeek AI 解析</div>
+
+  <header class="site-header">
+    <a class="logo" href="#home" data-view-link="home">
+      <span class="logo-badge" aria-label="随机头像">
+        <img id="appLogoAvatar" alt="题练云头像">
+      </span>
+      <span>
+        <strong>题练云 v5</strong>
+        <small>Question Training Cloud</small>
+      </span>
+    </a>
+    <nav class="header-nav">
+      <a href="#home" data-view-link="home">首页</a>
+      <a href="#bank" data-view-link="bank">题库</a>
+      <a href="#practice" data-view-link="practice">刷题</a>
+      <a href="#wrongbook" data-view-link="wrongbook">错题本</a>
+      <a href="#favorites" data-view-link="favorites">题目收藏</a>
+      <a href="#analytics" data-view-link="analytics">学习分析</a>
+      <a href="#ai" data-view-link="ai">AI 助教</a>
+    </nav>
+    <div class="account-box">
+      <span id="currentUserLabel">未登录</span>
+      <button class="btn small ghost" data-open-auth="login">登录</button>
+      <button class="btn small primary" data-open-auth="register">注册</button>
+      <button id="logoutButton" class="btn small ghost hidden" type="button">退出登录</button>
+    </div>
+  </header>
+
+  <main class="exam-layout">
+    <aside class="module-sidebar">
+      <section class="side-card">
+        <img class="side-avatar" src="../assets/characters/sidebar-assistant.png" alt="刷题助手">
+        <p class="side-kicker">今日建议</p>
+        <strong id="todayAdvice">先登录，然后导入一套试卷。</strong>
+      </section>
+      <nav class="module-nav">
+        <button data-view-button="home" class="active">总览中心</button>
+        <button data-view-button="bank">AI 题库导入</button>
+        <button data-view-button="practice">键盘刷题</button>
+        <button data-view-button="wrongbook">错题整理</button>
+        <button data-view-button="favorites">题目收藏</button>
+        <button data-view-button="analytics">学习分析</button>
+        <button data-view-button="ai">AI 自动识别</button>
+      </nav>
+      <section class="shortcut-card">
+        <strong>键盘刷题</strong>
+        <span id="shortcutChoiceKeys">1-4 / A-D 选择</span>
+        <span id="shortcutSubmitKey">Enter 提交试卷</span>
+        <span id="shortcutNavigateKeys">← → 切题</span>
+        <span id="shortcutSupportKeys">E 解析 · H AI 提示 · F 收藏</span>
+      </section>
+    </aside>
+
+    <section class="content-area">
+      <section id="homeView" class="app-view active">
+        <div class="commercial-hero">
+          <div>
+            <p class="eyebrow">对标考试酷、考研刷题、驾考宝典式高频训练</p>
+            <h1>从导入试卷到错题复盘，一屏完成高效刷题闭环。</h1>
+            <p class="hero-copy">支持注册登录、SQLite 数据库、批量导入、自定义正则、AI 自动识别、DeepSeek 解析、键盘速刷、错题归因、间隔复习和学习分析。</p>
+            <div class="hero-actions">
+              <button class="btn primary" data-view-button="bank">添加试卷</button>
+              <button class="btn dark" data-action="quickPractice">立即刷题</button>
+            </div>
+            <div class="visual-strip" aria-label="刷题视觉小队">
+              <img src="../assets/characters/hero-strip-import.png" alt="">
+              <img src="../assets/characters/hero-strip-review.png" alt="">
+              <img src="../assets/characters/hero-strip-keyboard.png" alt="">
+              <span>AI 识别、错题复盘、键盘速刷一起开工</span>
+            </div>
+          </div>
+          <div class="hero-panel">
+            <img class="hero-character" src="../assets/characters/hero-character.png" alt="题练云角色">
+            <strong>平台能力</strong>
+            <div class="capability-grid">
+              <span>题库 SaaS</span>
+              <span>AI 解析</span>
+              <span>错题闭环</span>
+              <span>键盘速刷</span>
+              <span>正则导入</span>
+              <span>数据入库</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <article><img class="stat-figure" src="../assets/characters/stat-papers.png" alt=""><span>试卷数</span><strong id="statPapers">0</strong></article>
+          <article><img class="stat-figure" src="../assets/characters/stat-answers.png" alt=""><span>答题数</span><strong id="statAnswers">0</strong></article>
+          <article><img class="stat-figure" src="../assets/characters/stat-accuracy.png" alt=""><span>正确率</span><strong id="statAccuracy">0%</strong></article>
+          <article><img class="stat-figure" src="../assets/characters/stat-wrong.png" alt=""><span>未掌握错题</span><strong id="statWrong">0</strong></article>
+          <article><img class="stat-figure" src="../assets/characters/stat-review.png" alt=""><span>待复习</span><strong id="statDue">0</strong></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>我的试卷</h2>
+              <button class="btn small ghost" data-action="refreshPapers">刷新</button>
+            </div>
+            <div id="paperCards" class="paper-cards"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>学习路线</h2>
+              <span>系统自动排序</span>
+            </div>
+            <div id="learningPath" class="learning-path"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="bankView" class="app-view">
+        <div class="panel bank-library-panel">
+          <div class="panel-title">
+            <div>
+              <h2>题库分组</h2>
+              <p>按分组查看已有试卷，点击添加题库后再显示 AI 智能识别题目。</p>
+            </div>
+            <button class="btn primary" data-action="toggleImportStudio">添加题库</button>
+          </div>
+          <div class="module-hero-art bank-art">
+            <img src="../assets/characters/bank-mascot.png" alt="">
+            <div>
+              <strong>题库素材台</strong>
+              <span>先按分组浏览，再按需打开 AI 导入。</span>
+            </div>
+          </div>
+          <div id="bankGroupList" class="bank-group-list"></div>
+        </div>
+
+        <div id="paperEditPanel" class="panel paper-edit-panel hidden"></div>
+
+        <div id="importStudio" class="panel import-studio hidden">
+          <div class="panel-title">
+            <div>
+              <h2>题库管理 / AI 智能识别题目</h2>
+              <p>取消复杂正则表单，直接 AI 自动识别；未配置 Key 时自动按常见格式兜底解析。</p>
+            </div>
+            <button class="btn ghost" data-action="loadImportExample">填入示例</button>
+          </div>
+
+          <div class="form-row">
+            <label>试卷名称<input id="paperTitle" placeholder="例如：考研政治马原高频题"></label>
+            <label>考试分类<input id="paperCategory" placeholder="例如：考研 / 计算机 / 期末"></label>
+            <label>试卷分组<input id="paperGroup" placeholder="例如：期末冲刺 / 专项错题 / 每日训练"></label>
+            <label>训练模式
+              <select id="paperSource">
+                <option value="ai">AI 自动识别</option>
+                <option value="manual">标准格式兜底</option>
+              </select>
+            </label>
+          </div>
+
+          <textarea id="importText" class="question-import-box" spellcheck="false" placeholder="1.题目
+A.
+B.
+C.
+D.
+答案:
+解析:可以没有"></textarea>
+
+          <div class="button-row">
+            <button class="btn primary" data-action="aiParseImport">智能识别题目</button>
+            <button class="btn success" data-action="savePaper">保存到数据库</button>
+          </div>
+
+          <div id="importResult" class="import-result"></div>
+        </div>
+      </section>
+
+      <section id="practiceView" class="app-view">
+        <div class="question-workbench">
+          <aside class="practice-control panel">
+            <h2>刷题设置</h2>
+            <label>选择试卷<select id="paperSelect"></select></label>
+            <label>模式
+              <select id="practiceMode">
+                <option value="practice">练习模式：选完即判</option>
+                <option value="exam">考试模式：隐藏答案与解析</option>
+              </select>
+            </label>
+            <button class="btn primary block" data-action="startPractice">开始刷题</button>
+            <button class="btn success block" data-action="finishSession">未完成也可提交</button>
+            <button class="btn ghost block" data-action="startWrongPractice">只练错题</button>
+            <div class="mini-stats">
+              <span id="practiceProgress">0 / 0</span>
+              <span id="practiceAccuracy">正确率 0%</span>
+              <span id="practiceTimer">00:00</span>
+            </div>
+            <section class="keyboard-settings">
+              <h3>自定义键盘</h3>
+              <div class="keyboard-grid">
+                <label>A键<input id="keyA" value="j"></label>
+                <label>B键<input id="keyB" value="k"></label>
+                <label>C键<input id="keyC" value="l"></label>
+                <label>D键<input id="keyD" value="i"></label>
+                <label>提交试卷<input id="keySubmit" value="Enter"></label>
+                <label>上一题<input id="keyPrev" value="a"></label>
+                <label>下一题<input id="keyNext" value="d"></label>
+                <label>解析<input id="keyAnalysis" value="s"></label>
+                <label>AI提示<input id="keyAi" value="w"></label>
+                <label>收藏<input id="keyFavorite" value="f"></label>
+              </div>
+              <button class="btn ghost block" data-action="saveKeyboardSettings">保存键盘格式</button>
+            </section>
+          </aside>
+
+          <article id="practiceStage" class="practice-stage panel hidden">
+            <div class="question-meta">
+              <span id="questionIndex">未开始</span>
+              <span id="questionType">请选择试卷</span>
+            </div>
+            <h2 id="questionTitle">选择一套试卷，点击开始刷题。刷题时可以调用 API 显示解析。</h2>
+            <div id="optionList" class="option-list"></div>
+            <input id="blankAnswer" class="blank-answer hidden" placeholder="填写答案">
+            <div id="answerFeedback" class="answer-feedback hidden"></div>
+            <div id="analysisPanel" class="analysis-panel hidden"></div>
+            <div class="button-row">
+              <button class="btn ghost" data-action="prevQuestion">上一题</button>
+              <button class="btn primary" data-action="submitPaper">提交试卷</button>
+              <button class="btn ghost" data-action="nextQuestion">下一题</button>
+              <button id="favoriteButton" class="btn ghost" data-action="toggleFavoriteCurrent">收藏</button>
+              <button class="btn ghost" data-action="showAnalysis">显示解析</button>
+              <button class="btn dark" data-action="aiExplainCurrent">AI 解析</button>
+            </div>
+            <div id="answerSheet" class="answer-sheet"></div>
+          </article>
+        </div>
+
+        <nav class="mobile-practice-bar hidden" aria-label="手机刷题快捷操作">
+          <button data-action="prevQuestion">上一题</button>
+          <button class="primary" data-action="submitPaper">提交</button>
+          <button data-action="nextQuestion">下一题</button>
+          <button id="mobileFavoriteButton" data-action="toggleFavoriteCurrent">收藏</button>
+          <button data-action="showAnalysis">解析</button>
+          <button data-action="aiExplainCurrent">AI</button>
+        </nav>
+      </section>
+
+      <section id="wrongbookView" class="app-view">
+        <div class="panel">
+          <div class="panel-title">
+            <h2>错题本</h2>
+            <div class="button-row compact">
+              <button class="btn ghost" data-action="loadWrongbook">刷新错题</button>
+              <label class="wrong-name-field">试卷名<input id="wrongPaperTitle" data-paper-title placeholder="不填自动生成"></label>
+              <label class="wrong-count-field">数量<input id="wrongPaperCount" data-paper-count type="number" min="0" value="0" readonly aria-label="已选择题目数量"></label>
+              <label class="clear-source-field"><input id="clearGeneratedSources" data-paper-clear type="checkbox">生成后清除所选来源</label>
+              <button class="btn primary" data-action="createWrongPaper">自定义新试卷</button>
+            </div>
+          </div>
+          <div class="wrongbook-visual">
+            <img src="../assets/characters/wrongbook-mascot.png" alt="">
+            <div>
+              <strong>错题不是失败，是下一套高分卷的原料。</strong>
+              <span>保存原因和记忆解析、选择数量，即可把薄弱点重组为新试卷。</span>
+            </div>
+          </div>
+          <div id="wrongbookPager" class="paper-page-toolbar"></div>
+          <div id="wrongbookList" class="wrongbook-list"></div>
+          <div id="wrongbookPagerBottom" class="paper-page-toolbar secondary"></div>
+        </div>
+      </section>
+
+      <section id="favoritesView" class="app-view">
+        <div class="panel favorite-panel">
+          <div class="panel-title">
+            <div>
+              <h2>题目收藏</h2>
+              <p>刷题时收藏的重点题会放在这里，适合考前快速回看。</p>
+            </div>
+            <div class="button-row compact">
+              <button class="btn ghost" data-action="loadFavorites">刷新收藏</button>
+              <label class="wrong-name-field">试卷名<input id="favoritePaperTitle" data-paper-title placeholder="不填自动生成"></label>
+              <label class="wrong-count-field">数量<input id="favoritePaperCount" data-paper-count type="number" min="0" value="0" readonly aria-label="已选择题目数量"></label>
+              <label class="clear-source-field"><input id="favoriteClearGeneratedSources" data-paper-clear type="checkbox">生成后清除所选来源</label>
+              <button class="btn primary" data-action="createWrongPaper">自定义新试卷</button>
+            </div>
+          </div>
+          <div class="wrongbook-visual favorite-visual">
+            <img src="../assets/characters/card-character-4.png" alt="">
+            <div>
+              <strong>收藏题就是你的考前高频卡片</strong>
+              <span>单独整理、分页全选，也可以和错题一起组成新试卷。</span>
+            </div>
+          </div>
+          <div id="favoritePager" class="paper-page-toolbar"></div>
+          <div id="favoriteList" class="favorite-list"></div>
+          <div id="favoritePagerBottom" class="paper-page-toolbar secondary"></div>
+        </div>
+      </section>
+
+      <section id="analyticsView" class="app-view">
+        <div class="panel">
+          <div class="panel-title">
+            <h2>学习分析</h2>
+            <span>正确率、错题数、复习队列、题库规模</span>
+          </div>
+          <div class="module-hero-art analytics-art">
+            <img src="../assets/characters/analytics-mascot.png" alt="">
+            <div>
+              <strong>把数据变成行动</strong>
+              <span>看规模、正确率和复习队列，决定今天先练哪一块。</span>
+            </div>
+          </div>
+          <div id="analysisCards" class="analytics-grid"></div>
+          <div id="bigDataInsights" class="big-data-insights"></div>
+          <div id="reviewQueue" class="review-queue"></div>
+        </div>
+      </section>
+
+      <section id="aiView" class="app-view">
+        <div class="panel ai-lab">
+          <div class="panel-title">
+            <div>
+              <h2>AI 助教 / AI 自动识别</h2>
+              <p>DeepSeek Key 只放在服务端环境变量 `DEEPSEEK_API_KEY`，前端不保存密钥。</p>
+            </div>
+          </div>
+          <div class="ai-mascot-card">
+            <img src="../assets/characters/ai-mascot.png" alt="">
+            <div>
+              <strong>AI 助教会把长答案拆成可执行建议</strong>
+              <span>更适合移动端阅读，也方便边刷题边记忆。</span>
+            </div>
+          </div>
+          <div id="aiQuotaCard" class="ai-quota-card">
+            <div>
+              <p class="eyebrow">AI 次数</p>
+              <strong id="aiRemaining">登录后查看</strong>
+              <span id="aiQuotaDetail">每个用户免费体验 5 次 AI 功能。</span>
+            </div>
+            <div class="payment-box">
+              <label>自定义金额（元）<input id="paymentAmount" type="number" min="1" step="0.01" value="1"></label>
+              <button class="btn success" data-action="createAiPaymentOrder">支付宝充值</button>
+              <small>1 元 = 40 次 AI，可自定义金额。</small>
+            </div>
+            <div id="paymentOrderBox" class="payment-order hidden"></div>
+          </div>
+          <div class="ai-layout">
+            <section class="ai-input-card">
+              <h3>选择任务</h3>
+              <div class="ai-preset-grid">
+                <button data-ai-template="请根据我的错题，按知识点、错误原因、三天复习计划输出。">错题复盘</button>
+                <button data-ai-template="请把下面题目生成口诀、联想记忆和易错提醒。">记忆口诀</button>
+                <button data-ai-template="请根据我的学习数据，生成今天的刷题计划。">今日计划</button>
+                <button data-ai-template="请把下面题目解析成：核心考点、正确答案、错误选项原因。">题目解析</button>
+              </div>
+              <textarea id="aiPrompt" class="ai-prompt" placeholder="在这里输入你的问题，或点击上方任务模板。"></textarea>
+              <div class="button-row">
+                <button class="btn primary" data-action="askAi">请求 AI 学习建议</button>
+                <button class="btn dark" data-action="aiAnalyzeWrongbook">AI 分析错题本</button>
+              </div>
+            </section>
+            <section class="ai-output-card">
+              <div class="ai-output-head">
+                <strong>AI 对话建议</strong>
+                <span>像助教一样逐条回复</span>
+              </div>
+              <div id="aiOutput" class="ai-chat"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="authDialog" class="auth-dialog">
+    <form method="dialog" class="auth-card">
+      <button class="dialog-close" value="cancel">×</button>
+      <h2 id="authTitle">登录</h2>
+      <label>用户名<input id="authUsername" autocomplete="username"></label>
+      <label id="nicknameRow" class="hidden">昵称<input id="authNickname"></label>
+      <label id="authEmailRow" class="hidden">QQ 邮箱<input id="authEmail" type="email" autocomplete="email" placeholder="例如 123456@qq.com"></label>
+      <label id="authCaptchaRow" class="hidden">图形识别码
+        <div class="captcha-row">
+          <img id="authCaptchaImage" alt="图形识别码">
+          <input id="authCaptchaCode" autocomplete="off" maxlength="6" placeholder="输入图片字符">
+          <button id="authRefreshCaptcha" class="btn ghost" type="button">换一张</button>
+        </div>
+      </label>
+      <label id="authEmailCodeRow" class="hidden">邮箱验证码
+        <div class="code-row">
+          <input id="authEmailCode" inputmode="numeric" placeholder="6 位验证码">
+          <button id="authSendCode" class="btn ghost" type="button">发送验证码</button>
+        </div>
+      </label>
+      <label>密码<input id="authPassword" type="password" autocomplete="current-password"></label>
+      <button id="authSubmit" class="btn primary block" type="button">登录</button>
+      <p id="authHint">没有账号？点击右上角注册。</p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="assets/js/v5-app.js"></script>
+</body>
+</html>

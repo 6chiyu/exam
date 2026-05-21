@@ -1,0 +1,25 @@
+{
+  "name": "question-training-cloud-v5",
+  "version": "1.0.0",
+  "private": true,
+  "description": "题练云 v5 Netlify + Supabase deployment backend",
+  "scripts": {
+    "build": "npm run typecheck && npm run test",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/v5-frontend-smoke.js && node tests/netlify-supabase-smoke.js",
+    "test:frontend": "node tests/v5-frontend-smoke.js",
+    "test:netlify": "node tests/netlify-supabase-smoke.js",
+    "migrate:supabase:dry": "python scripts/migrate_sqlite_to_supabase.py --dry-run",
+    "migrate:supabase": "python scripts/migrate_sqlite_to_supabase.py"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.75.0",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^4.2.6",
+    "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.4",
+    "typescript": "^5.9.3"
+  }
+}
