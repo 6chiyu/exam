@@ -1,4 +1,4 @@
--- 题练云 v5 Supabase schema.
+-- Exam v5 Supabase schema.
 -- Run this once in Supabase SQL Editor before deploying Netlify Functions.
 
 create table if not exists public.users (
@@ -23,7 +23,7 @@ create table if not exists public.papers (
   user_id text not null references public.users(id) on delete cascade,
   title text not null,
   category text not null,
-  group_name text not null default '默认分组',
+  group_name text not null default 'default',
   source text not null default 'manual',
   question_count integer not null default 0,
   created_at timestamptz not null default now()
@@ -67,7 +67,7 @@ create table if not exists public.wrongbook (
   user_id text not null references public.users(id) on delete cascade,
   question_id text not null references public.questions(id) on delete cascade,
   user_answer text not null,
-  reason text not null default '待归因',
+  reason text not null default 'unclassified',
   note text not null default '',
   mastered boolean not null default false,
   wrong_count integer not null default 1,
