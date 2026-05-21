@@ -93,6 +93,17 @@ class V5BackendTest(unittest.TestCase):
         self.assertEqual(verification['email'], 'student@qq.com')
         self.assertIn('dev_code', verification)
 
+        fresh_challenge = self.app.create_captcha(include_dev_code=True)
+        with self.assertRaises(exam_core.AppError) as cooldown_error:
+            self.app.create_email_verification(
+                'student@qq.com',
+                deliver=False,
+                captcha_id=fresh_challenge['id'],
+                captcha_code=fresh_challenge['dev_code'],
+                require_captcha=True
+            )
+        self.assertEqual(cooldown_error.exception.status, 429)
+
         with self.assertRaises(exam_core.AppError):
             self.app.create_email_verification(
                 'student@qq.com',
@@ -117,7 +128,7 @@ class V5BackendTest(unittest.TestCase):
             'StrongPass123',
             'Mail User',
             email='student@qq.com',
-            email_code=verification['dev_code'],
+            email_code=f"{verification['dev_code'][:3]} {verification['dev_code'][3:]}",
             require_email=True
         )
         self.assertEqual(registered['email'], 'student@qq.com')
