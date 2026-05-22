@@ -190,6 +190,10 @@ function routeTo(view) {
   if (view === 'ai') refreshAiAccount();
 }
 
+function getDisplayNickname(user) {
+  return user?.nickname || user?.username || '用户';
+}
+
 async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (appState.token) headers.Authorization = `Bearer ${appState.token}`;
@@ -250,7 +254,7 @@ async function submitAuth() {
     updateUserLabel();
     await refreshAll();
     await refreshAiAccount();
-    toast(`欢迎回来，${appState.user.nickname}`);
+    toast(`欢迎回来，${getDisplayNickname(appState.user)}`);
   } catch (error) {
     toast(error.message, true);
   }
@@ -347,7 +351,7 @@ async function refreshAuthCaptcha() {
 }
 
 function updateUserLabel() {
-  $('#currentUserLabel').textContent = appState.user ? appState.user.nickname : '未登录';
+  $('#currentUserLabel').textContent = appState.user ? getDisplayNickname(appState.user) : '未登录';
   $$('[data-open-auth]').forEach((button) => {
     button.classList.toggle('hidden', Boolean(appState.user));
   });

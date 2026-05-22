@@ -344,7 +344,7 @@
       </div>
 
       <label id="usernameField">QQ号<input id="username" autocomplete="username" inputmode="numeric" placeholder="请输入 QQ号"></label>
-      <label id="nicknameField" class="hidden">昵称<input id="nickname" placeholder="显示在页面上的名字"></label>
+      <label id="nicknameField" class="hidden">显示昵称<input id="nickname" placeholder="登录后网站显示的昵称"></label>
       <label id="emailField" class="hidden">QQ 邮箱<input id="email" type="email" autocomplete="email" placeholder="例如 123456@qq.com"></label>
       <label id="captchaField" class="hidden">图形识别码
         <div class="captcha-row">
@@ -443,10 +443,14 @@
       return `v5/index.html${location.hash || ''}`;
     }
 
+    function getDisplayNickname(user) {
+      return user?.nickname || user?.username || '用户';
+    }
+
     function syncSessionUi() {
       $('#logoutAuth').classList.toggle('hidden', !state.token);
       if (state.token && state.user) {
-        setStatus(`当前已登录：${state.user.nickname || state.user.username}，点击登录进入 v5。`);
+        setStatus(`当前已登录：${getDisplayNickname(state.user)}，点击登录进入 v5。`);
       }
     }
 

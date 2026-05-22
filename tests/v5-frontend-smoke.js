@@ -62,7 +62,9 @@ function extractFunction(source, name) {
   'assets/head%20portrait/1.jpg',
   'assets/backgrounds/main-page.jpg',
   'assets/characters/hero-character.png',
-  'QQ号'
+  'QQ号',
+  '显示昵称',
+  '登录后网站显示的昵称'
 ].forEach((text) => mustInclude(rootHtml, text, 'root html'));
 mustNotInclude(rootHtml, 'id="enterApp"', 'root html');
 mustNotInclude(rootHtml, '>进入 v5<', 'root html');
@@ -70,6 +72,8 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
 [
   '考试酷级题库管理',
   'QQ号',
+  '显示昵称',
+  '登录后网站显示的昵称',
   '注册',
   '登录',
   '图形识别码',
@@ -117,6 +121,7 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   'refreshAiAccount',
   'refreshAuthCaptcha',
   'logoutCurrentUser',
+  'getDisplayNickname',
   'renderEmptyStats',
   'authCaptchaId',
   'openAuth(\'reset\')',
