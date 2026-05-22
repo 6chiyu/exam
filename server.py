@@ -72,6 +72,20 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     captcha_code=body.get('captchaCode') or body.get('captcha_code') or '',
                     require_captcha=True
                 ))
+            if parsed.path == '/api/password/send-reset-code':
+                return self._json(200, APP.create_password_reset_verification(
+                    body.get('email'),
+                    deliver=True,
+                    captcha_id=body.get('captchaId') or body.get('captcha_id') or '',
+                    captcha_code=body.get('captchaCode') or body.get('captcha_code') or '',
+                    require_captcha=True
+                ))
+            if parsed.path == '/api/password/reset':
+                return self._json(200, APP.reset_password_by_email(
+                    body.get('email'),
+                    body.get('emailCode') or body.get('email_code') or '',
+                    body.get('password') or body.get('newPassword') or body.get('new_password') or ''
+                ))
             if parsed.path == '/api/register':
                 user = APP.register(
                     body.get('username'),

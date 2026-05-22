@@ -128,6 +128,7 @@ function bindAuth() {
   $('#authSubmit').addEventListener('click', submitAuth);
   $('#authSendCode')?.addEventListener('click', sendAuthEmailCode);
   $('#authRefreshCaptcha')?.addEventListener('click', () => refreshAuthCaptcha());
+  $('#resetAuthMode')?.addEventListener('click', () => openAuth('reset'));
   $('#logoutButton')?.addEventListener('click', logoutCurrentUser);
 }
 
@@ -206,17 +207,20 @@ async function api(path, options = {}) {
 
 function openAuth(mode) {
   $('#authDialog').dataset.mode = mode;
-  $('#authTitle').textContent = mode === 'register' ? '注册' : '登录';
-  $('#authSubmit').textContent = mode === 'register' ? '注册并开始' : '登录';
+  $('#authTitle').textContent = mode === 'reset' ? '重置密码' : (mode === 'register' ? '注册' : '登录');
+  $('#authSubmit').textContent = mode === 'reset' ? '重置密码' : (mode === 'register' ? '注册并开始' : '登录');
+  $('#authUsernameRow')?.classList.toggle('hidden', mode === 'reset');
   $('#nicknameRow').classList.toggle('hidden', mode !== 'register');
-  $('#authEmailRow')?.classList.toggle('hidden', mode !== 'register');
-  $('#authCaptchaRow')?.classList.toggle('hidden', mode !== 'register');
-  $('#authEmailCodeRow')?.classList.toggle('hidden', mode !== 'register');
-  $('#authHint').textContent = mode === 'register'
-    ? '注册需要先识别图形码，再发送 QQ 邮箱验证码。每个用户免费体验 5 次 AI。'
-    : '没有账号？点击右上角注册。';
+  $('#authEmailRow')?.classList.toggle('hidden', mode === 'login');
+  $('#authCaptchaRow')?.classList.toggle('hidden', mode === 'login');
+  $('#authEmailCodeRow')?.classList.toggle('hidden', mode === 'login');
+  $('#authHint').textContent = mode === 'reset'
+    ? '输入注册 QQ 邮箱，获取验证码后设置新密码。'
+    : (mode === 'register'
+      ? '注册需要先识别图形码，再发送 QQ 邮箱验证码。每个用户免费体验 5 次 AI。'
+      : '没有账号？点击右上角注册。');
   $('#authDialog').showModal();
-  if (mode === 'register') refreshAuthCaptcha();
+  if (mode !== 'login') refreshAuthCaptcha();
 }
 
 async function submitAuth() {
@@ -229,6 +233,10 @@ async function submitAuth() {
     emailCode: $('#authEmailCode')?.value.trim() || ''
   };
   try {
+    if (mode === 'reset') {
+      await submitPasswordReset(payload);
+      return;
+    }
     if (mode === 'register') {
       await api('/api/register', { method: 'POST', body: payload });
       toast('注册成功，正在登录。');
@@ -246,6 +254,17 @@ async function submitAuth() {
   } catch (error) {
     toast(error.message, true);
   }
+}
+
+async function submitPasswordReset(payload) {
+  await api('/api/password/reset', {
+    method: 'POST',
+    body: { email: payload.email, emailCode: payload.emailCode, password: payload.password }
+  });
+  toast('密码已重置，请使用新密码登录。');
+  $('#authPassword').value = '';
+  $('#authEmailCode').value = '';
+  openAuth('login');
 }
 
 async function sendAuthEmailCode() {
@@ -266,7 +285,8 @@ async function sendAuthEmailCode() {
   const button = $('#authSendCode');
   try {
     if (button) button.disabled = true;
-    const result = await api('/api/email/send-code', {
+    const mode = $('#authDialog').dataset.mode || 'login';
+    const result = await api(mode === 'reset' ? '/api/password/send-reset-code' : '/api/email/send-code', {
       method: 'POST',
       body: { email, captchaId: appState.authCaptchaId, captchaCode }
     });

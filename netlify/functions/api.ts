@@ -81,9 +81,21 @@ export async function routeRequest(event: any) {
     return createEmailVerification(body.email, {
       captchaId: body.captchaId || body.captcha_id || '',
       captchaCode: body.captchaCode || body.captcha_code || '',
+      purpose: 'register',
       requireCaptcha: true,
       deliver: true
     });
+  }
+  if (method === 'POST' && path === '/api/password/send-reset-code') {
+    return createPasswordResetVerification(body.email, {
+      captchaId: body.captchaId || body.captcha_id || '',
+      captchaCode: body.captchaCode || body.captcha_code || '',
+      requireCaptcha: true,
+      deliver: true
+    });
+  }
+  if (method === 'POST' && path === '/api/password/reset') {
+    return resetPasswordByEmail(body.email, body.emailCode || body.email_code || '', body.password || body.newPassword || body.new_password || '');
   }
   if (method === 'POST' && path === '/api/register') {
     return { status: 201, body: { user: await register(body) } };
@@ -247,11 +259,12 @@ async function createCaptcha(includeDevCode = false) {
 async function createEmailVerification(emailValue: string, options: any = {}) {
   const email = normalizeEmail(emailValue);
   if (!isQqEmail(email)) throw new AppError('请使用 QQ 邮箱接收验证码');
+  const purpose = cleanText(options.purpose) || 'register';
   const recent = await db()
     .from('email_verifications')
     .select('id')
     .eq('email', email)
-    .eq('purpose', 'register')
+    .eq('purpose', purpose)
     .is('used_at', null)
     .gt('expires_at', nowSeconds() + EMAIL_CODE_TTL_SECONDS - EMAIL_CODE_COOLDOWN_SECONDS)
     .order('created_at', { ascending: false })
@@ -264,13 +277,13 @@ async function createEmailVerification(emailValue: string, options: any = {}) {
   await checked(db().from('email_verifications').insert({
     id: newId('mail'),
     email,
-    purpose: 'register',
+    purpose,
     code_hash: hashPassword(code, salt),
     salt,
     expires_at: nowSeconds() + EMAIL_CODE_TTL_SECONDS,
     created_at: utcNow()
   }));
-  const delivered = options.deliver && await sendQqEmailCode(email, code);
+  const delivered = options.deliver && await sendQqEmailCode(email, code, purpose);
   const result: any = {
     sent: delivered,
     email,
@@ -279,6 +292,27 @@ async function createEmailVerification(emailValue: string, options: any = {}) {
   };
   if (!delivered) result.dev_code = code;
   return result;
+}
+
+async function createPasswordResetVerification(emailValue: string, options: any = {}) {
+  const email = normalizeEmail(emailValue);
+  if (!isQqEmail(email)) throw new AppError('请使用注册 QQ 邮箱接收验证码');
+  const user = await selectOne('users', 'id', { email });
+  if (!user) throw new AppError('这个 QQ 邮箱还没有注册账号', 404);
+  return createEmailVerification(email, { ...options, purpose: 'reset_password' });
+}
+
+async function resetPasswordByEmail(emailValue: string, emailCode: string, newPassword: string) {
+  const email = normalizeEmail(emailValue);
+  if (!isQqEmail(email)) throw new AppError('请使用注册 QQ 邮箱重置密码');
+  if (String(newPassword || '').length < 8) throw new AppError('新密码至少 8 位');
+  const user = await selectOne('users', 'id', { email });
+  if (!user) throw new AppError('这个 QQ 邮箱还没有注册账号', 404);
+  await verifyEmailCode(email, emailCode, 'reset_password');
+  const salt = randomHex(16);
+  await checked(db().from('users').update({ password_hash: hashPassword(newPassword, salt), salt }).eq('id', user.id));
+  await checked(db().from('auth_tokens').delete().eq('user_id', user.id));
+  return { reset: true, email };
 }
 
 async function verifyCaptcha(captchaId: string, captchaCode: string) {
@@ -1033,7 +1067,7 @@ function buildLearningRecommendations(statsValue: any) {
   return recommendations.length ? recommendations.slice(0, 5) : ['整体状态稳定，今天可以用收藏题和错题混合生成一套巩固卷。'];
 }
 
-async function sendQqEmailCode(email: string, code: string) {
+async function sendQqEmailCode(email: string, code: string, purpose = 'register') {
   const user = process.env.QQ_SMTP_USER;
   const pass = process.env.QQ_SMTP_AUTH_CODE;
   if (!user || !pass) return false;

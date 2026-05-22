@@ -379,7 +379,7 @@ D.
     <form method="dialog" class="auth-card">
       <button class="dialog-close" value="cancel">×</button>
       <h2 id="authTitle">登录</h2>
-      <label>用户名<input id="authUsername" autocomplete="username"></label>
+      <label id="authUsernameRow">用户名<input id="authUsername" autocomplete="username"></label>
       <label id="nicknameRow" class="hidden">昵称<input id="authNickname"></label>
       <label id="authEmailRow" class="hidden">QQ 邮箱<input id="authEmail" type="email" autocomplete="email" placeholder="例如 123456@qq.com"></label>
       <label id="authCaptchaRow" class="hidden">图形识别码
@@ -397,6 +397,7 @@ D.
       </label>
       <label>密码<input id="authPassword" type="password" autocomplete="current-password"></label>
       <button id="authSubmit" class="btn primary block" type="button">登录</button>
+      <button id="resetAuthMode" class="auth-link" type="button">忘记密码？邮箱重置</button>
       <p id="authHint">没有账号？点击右上角注册。</p>
     </form>
   </dialog>

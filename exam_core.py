@@ -290,7 +290,7 @@ class ExamApp:
 
         delivered = False
         if deliver and qq_smtp_configured():
-            send_qq_email_code(email, code)
+            send_qq_email_code(email, code, purpose)
             delivered = True
         result = {
             'sent': delivered,
@@ -301,6 +301,30 @@ class ExamApp:
         if not delivered:
             result['dev_code'] = code
         return result
+
+    def create_password_reset_verification(
+        self,
+        email,
+        deliver=True,
+        captcha_id='',
+        captcha_code='',
+        require_captcha=False
+    ):
+        email = normalize_email(email)
+        if not is_qq_email(email):
+            raise AppError('请使用注册 QQ 邮箱接收验证码')
+        with self.db() as conn:
+            user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+        if not user:
+            raise AppError('这个 QQ 邮箱还没有注册账号', 404)
+        return self.create_email_verification(
+            email,
+            purpose='reset_password',
+            deliver=deliver,
+            captcha_id=captcha_id,
+            captcha_code=captcha_code,
+            require_captcha=require_captcha
+        )
 
     def _verify_captcha(self, conn, captcha_id, captcha_code, purpose='email'):
         captcha_id = clean_text(captcha_id)
@@ -372,6 +396,26 @@ class ExamApp:
             )
             self._ensure_ai_account(conn, user['id'])
         return {'token': token, 'user': public_user(user)}
+
+    def reset_password_by_email(self, email, email_code, new_password):
+        email = normalize_email(email)
+        if not is_qq_email(email):
+            raise AppError('请使用注册 QQ 邮箱重置密码')
+        if len(new_password or '') < 8:
+            raise AppError('新密码至少 8 位')
+        salt = secrets.token_hex(16)
+        password_hash = hash_password(new_password, salt)
+        with self.db() as conn:
+            user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+            if not user:
+                raise AppError('这个 QQ 邮箱还没有注册账号', 404)
+            self._verify_email_code(conn, email, email_code, 'reset_password')
+            conn.execute(
+                'UPDATE users SET password_hash = ?, salt = ? WHERE id = ?',
+                (password_hash, salt, user['id'])
+            )
+            conn.execute('DELETE FROM auth_tokens WHERE user_id = ?', (user['id'],))
+        return {'reset': True, 'email': email}
 
     def require_user(self, token):
         if not token:
@@ -1422,16 +1466,17 @@ def qq_smtp_configured():
     return bool(os.environ.get('QQ_SMTP_USER') and os.environ.get('QQ_SMTP_AUTH_CODE'))
 
 
-def send_qq_email_code(email, code):
+def send_qq_email_code(email, code, purpose='register'):
     smtp_user = os.environ.get('QQ_SMTP_USER')
     smtp_code = os.environ.get('QQ_SMTP_AUTH_CODE')
     if not smtp_user or not smtp_code:
         return False
     message = EmailMessage()
-    message['Subject'] = '题练云 v5 注册验证码'
+    subject_type = '重置密码' if purpose == 'reset_password' else '注册'
+    message['Subject'] = f'题练云 v5 {subject_type}验证码'
     message['From'] = os.environ.get('QQ_SMTP_FROM') or smtp_user
     message['To'] = email
-    message.set_content(f'你的题练云 v5 注册验证码是：{code}\n\n10 分钟内有效，如非本人操作请忽略。')
+    message.set_content(f'你的题练云 v5 {subject_type}验证码是：{code}\n\n10 分钟内有效，如非本人操作请忽略。')
     try:
         with smtplib.SMTP_SSL(os.environ.get('QQ_SMTP_HOST', 'smtp.qq.com'), int(os.environ.get('QQ_SMTP_PORT', '465')), timeout=20) as smtp:
             smtp.login(smtp_user, smtp_code)

@@ -253,6 +253,18 @@
       flex: 1 1 130px;
     }
 
+    .auth-link {
+      min-height: 0;
+      padding: 0;
+      color: var(--blue);
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 900;
+      text-align: center;
+    }
+
     .status {
       min-height: 22px;
       margin: 0;
@@ -331,7 +343,7 @@
         </div>
       </div>
 
-      <label>用户名<input id="username" autocomplete="username" placeholder="请输入用户名"></label>
+      <label id="usernameField">用户名<input id="username" autocomplete="username" placeholder="请输入用户名"></label>
       <label id="nicknameField" class="hidden">昵称<input id="nickname" placeholder="显示在页面上的名字"></label>
       <label id="emailField" class="hidden">QQ 邮箱<input id="email" type="email" autocomplete="email" placeholder="例如 123456@qq.com"></label>
       <label id="captchaField" class="hidden">图形识别码
@@ -353,6 +365,7 @@
         <button id="submitAuth" class="btn primary" type="button">登录</button>
         <button id="logoutAuth" class="btn ghost hidden" type="button">退出登录</button>
       </div>
+      <button id="resetMode" class="auth-link" type="button">忘记密码？通过 QQ 邮箱重置</button>
       <p id="status" class="status">已有账号可直接登录，新用户切换到注册。</p>
     </section>
   </main>
@@ -408,14 +421,17 @@
       state.mode = mode;
       $('#loginMode').classList.toggle('active', mode === 'login');
       $('#registerMode').classList.toggle('active', mode === 'register');
+      $('#usernameField').classList.toggle('hidden', mode === 'reset');
       $('#nicknameField').classList.toggle('hidden', mode !== 'register');
-      $('#emailField').classList.toggle('hidden', mode !== 'register');
-      $('#captchaField').classList.toggle('hidden', mode !== 'register');
-      $('#emailCodeField').classList.toggle('hidden', mode !== 'register');
-      $('#authTitle').textContent = mode === 'login' ? '登录' : '注册';
-      $('#submitAuth').textContent = mode === 'login' ? '登录' : '注册并进入';
-      setStatus(mode === 'login' ? '已有账号可直接登录，新用户切换到注册。' : '注册需要先识别图形码，再发送 QQ 邮箱验证码。');
-      if (mode === 'register') refreshCaptcha();
+      $('#emailField').classList.toggle('hidden', mode === 'login');
+      $('#captchaField').classList.toggle('hidden', mode === 'login');
+      $('#emailCodeField').classList.toggle('hidden', mode === 'login');
+      $('#authTitle').textContent = mode === 'reset' ? '重置密码' : (mode === 'login' ? '登录' : '注册');
+      $('#submitAuth').textContent = mode === 'reset' ? '重置密码' : (mode === 'login' ? '登录' : '注册并进入');
+      setStatus(mode === 'login'
+        ? '已有账号可直接登录，新用户切换到注册。'
+        : (mode === 'reset' ? '输入注册 QQ 邮箱，先识别图形码，再获取重置验证码。' : '注册需要先识别图形码，再发送 QQ 邮箱验证码。'));
+      if (mode !== 'login') refreshCaptcha();
     }
 
     function setStatus(message, isError = false) {
@@ -482,7 +498,7 @@
       try {
         $('#sendEmailCode').disabled = true;
         setStatus('正在发送 QQ 邮箱验证码...');
-        const result = await requestJson('/api/email/send-code', {
+        const result = await requestJson(state.mode === 'reset' ? '/api/password/send-reset-code' : '/api/email/send-code', {
           email,
           captchaId: state.captchaId,
           captchaCode
@@ -531,6 +547,10 @@
       const username = $('#username').value.trim();
       const password = $('#password').value;
       const nickname = $('#nickname').value.trim() || username;
+      if (state.mode === 'reset') {
+        await submitPasswordReset(password);
+        return;
+      }
       if (!username || !password) {
         setStatus('请先填写用户名和密码。', true);
         return;
@@ -558,6 +578,25 @@
       }
     }
 
+    async function submitPasswordReset(password) {
+      const email = $('#email').value.trim();
+      const emailCode = $('#emailCode').value.trim();
+      if (!email || !emailCode || !password) {
+        setStatus('请填写 QQ 邮箱、邮箱验证码和新密码。', true);
+        return;
+      }
+      try {
+        setStatus('正在重置密码...');
+        await requestJson('/api/password/reset', { email, emailCode, password });
+        setStatus('密码已重置，请使用新密码登录。');
+        $('#password').value = '';
+        $('#emailCode').value = '';
+        setMode('login');
+      } catch (error) {
+        setStatus(error.message, true);
+      }
+    }
+
     function logoutAuth() {
       state.token = '';
       state.user = null;
@@ -569,6 +608,7 @@
 
     $('#loginMode').addEventListener('click', () => setMode('login'));
     $('#registerMode').addEventListener('click', () => setMode('register'));
+    $('#resetMode').addEventListener('click', () => setMode('reset'));
     $('#submitAuth').addEventListener('click', submitAuth);
     $('#sendEmailCode').addEventListener('click', sendEmailCode);
     $('#refreshCaptcha').addEventListener('click', refreshCaptcha);
