@@ -61,13 +61,15 @@ function extractFunction(source, name) {
   'exam_v5_landing_avatar',
   'assets/head%20portrait/1.jpg',
   'assets/backgrounds/main-page.jpg',
-  'assets/characters/hero-character.png'
+  'assets/characters/hero-character.png',
+  'QQ号'
 ].forEach((text) => mustInclude(rootHtml, text, 'root html'));
 mustNotInclude(rootHtml, 'id="enterApp"', 'root html');
 mustNotInclude(rootHtml, '>进入 v5<', 'root html');
 
 [
   '考试酷级题库管理',
+  'QQ号',
   '注册',
   '登录',
   '图形识别码',

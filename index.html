@@ -343,7 +343,7 @@
         </div>
       </div>
 
-      <label id="usernameField">用户名<input id="username" autocomplete="username" placeholder="请输入用户名"></label>
+      <label id="usernameField">QQ号<input id="username" autocomplete="username" inputmode="numeric" placeholder="请输入 QQ号"></label>
       <label id="nicknameField" class="hidden">昵称<input id="nickname" placeholder="显示在页面上的名字"></label>
       <label id="emailField" class="hidden">QQ 邮箱<input id="email" type="email" autocomplete="email" placeholder="例如 123456@qq.com"></label>
       <label id="captchaField" class="hidden">图形识别码
@@ -552,7 +552,7 @@
         return;
       }
       if (!username || !password) {
-        setStatus('请先填写用户名和密码。', true);
+        setStatus('请先填写 QQ号和密码。', true);
         return;
       }
       try {
