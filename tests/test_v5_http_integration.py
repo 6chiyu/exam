@@ -99,7 +99,7 @@ class V5HttpIntegrationTest(unittest.TestCase):
         me = request_json(self.base, '/api/me', token=token)
         self.assertEqual(me['nickname'], '集成测试用户')
         ai_account = request_json(self.base, '/api/ai/account', token=token)
-        self.assertEqual(ai_account['remaining'], 5)
+        self.assertEqual(ai_account['remaining'], 20)
         seeded = request_json(self.base, '/api/papers', token=token)
         self.assertEqual(len(seeded['papers']), 1)
         self.assertEqual(seeded['papers'][0]['title'], '计算机网络基础初始题库')
@@ -250,26 +250,17 @@ D.PNG
         self.assertEqual(stats['answers'], 1)
         self.assertEqual(stats['wrong'], 1)
 
-        order = request_json(
+        order_error = request_json(
             self.base,
             '/api/payments/ai-package',
             {'amount_yuan': 1.25, 'provider': 'alipay'},
             token=token,
-            expect_status=201
+            expect_status=503
         )
-        self.assertEqual(order['credits'], 50)
-        self.assertEqual(order['status'], 'pending')
-        paid = request_json(
-            self.base,
-            f"/api/payments/{order['id']}/complete",
-            {},
-            token=token,
-            method='POST'
-        )
-        self.assertEqual(paid['status'], 'paid')
+        self.assertIn('暂未开放', order_error['error'])
         ai_account = request_json(self.base, '/api/ai/account', token=token)
-        self.assertEqual(ai_account['paid_credits'], 50)
-        self.assertEqual(ai_account['remaining'], 55)
+        self.assertEqual(ai_account['paid_credits'], 0)
+        self.assertEqual(ai_account['remaining'], 20)
 
         finished = request_json(
             self.base,

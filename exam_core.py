@@ -20,7 +20,7 @@ INITIAL_BANK_PATH = os.path.join(os.path.dirname(__file__), 'data', 'initial_que
 INITIAL_BANK_TITLE = '计算机网络基础初始题库'
 INITIAL_BANK_CATEGORY = '计算机网络'
 INITIAL_BANK_GROUP = '系统初始题库'
-FREE_AI_CREDITS = 5
+FREE_AI_CREDITS = 20
 AI_CREDITS_PER_YUAN = 40
 EMAIL_CODE_TTL_SECONDS = 10 * 60
 EMAIL_CODE_COOLDOWN_SECONDS = 60
@@ -184,7 +184,7 @@ class ExamApp:
 
                 CREATE TABLE IF NOT EXISTS ai_accounts (
                   user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-                  free_credits INTEGER NOT NULL DEFAULT 5,
+                  free_credits INTEGER NOT NULL DEFAULT 20,
                   paid_credits INTEGER NOT NULL DEFAULT 0,
                   total_used INTEGER NOT NULL DEFAULT 0,
                   updated_at TEXT NOT NULL
@@ -459,6 +459,14 @@ class ExamApp:
             """,
             (user_id, FREE_AI_CREDITS, utc_now())
         )
+        conn.execute(
+            """
+            UPDATE ai_accounts
+            SET free_credits = max(0, ? - total_used), updated_at = ?
+            WHERE user_id = ? AND free_credits < max(0, ? - total_used)
+            """,
+            (FREE_AI_CREDITS, utc_now(), user_id, FREE_AI_CREDITS)
+        )
 
     def get_ai_account(self, token):
         user = self.require_user(token)
@@ -470,7 +478,7 @@ class ExamApp:
     def ensure_ai_credit(self, token, amount=1):
         account = self.get_ai_account(token)
         if account['remaining'] < amount:
-            raise AppError('AI 次数不足，请开通会员或充值后继续使用', 402)
+            raise AppError('AI 次数不足，当前充值功能暂未开放，请稍后再试', 402)
         return account
 
     def consume_ai_credit(self, token, amount=1):
@@ -483,7 +491,7 @@ class ExamApp:
             free = int(row['free_credits'])
             paid = int(row['paid_credits'])
             if free + paid < amount:
-                raise AppError('AI 次数不足，请开通会员或充值后继续使用', 402)
+                raise AppError('AI 次数不足，当前充值功能暂未开放，请稍后再试', 402)
             use_free = min(free, amount)
             use_paid = amount - use_free
             conn.execute(
@@ -501,6 +509,7 @@ class ExamApp:
         return ai_account_from_row(row)
 
     def create_ai_payment_order(self, token, payload):
+        raise AppError('AI 充值功能暂未开放，当前每个用户免费体验 20 次', 503)
         user = self.require_user(token)
         provider = clean_text((payload or {}).get('provider') or 'alipay').lower()
         if provider != 'alipay':
@@ -534,6 +543,7 @@ class ExamApp:
         return payment_order_from_row(row)
 
     def complete_payment_order(self, token, order_id):
+        raise AppError('AI 充值功能暂未开放，当前每个用户免费体验 20 次', 503)
         user = self.require_user(token)
         with self.db() as conn:
             self._ensure_ai_account(conn, user['id'])

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import nodemailer from 'nodemailer';
 import path from 'node:path';
 
-const FREE_AI_CREDITS = 5;
+const FREE_AI_CREDITS = 20;
 const AI_CREDITS_PER_YUAN = 40;
 const EMAIL_CODE_TTL_SECONDS = 10 * 60;
 const EMAIL_CODE_COOLDOWN_SECONDS = 60;
@@ -642,11 +642,16 @@ async function ensureAiAccount(userId: string) {
     total_used: 0,
     updated_at: utcNow()
   }, { onConflict: 'user_id', ignoreDuplicates: true }));
+  const account = await selectOne('ai_accounts', '*', { user_id: userId });
+  const targetFreeCredits = Math.max(0, FREE_AI_CREDITS - Number(account?.total_used || 0));
+  if (account && Number(account.free_credits || 0) < targetFreeCredits) {
+    await checked(db().from('ai_accounts').update({ free_credits: targetFreeCredits, updated_at: utcNow() }).eq('user_id', userId));
+  }
 }
 
 async function ensureAiCredit(token: string, amount = 1) {
   const account = await getAiAccount(token);
-  if (account.remaining < amount) throw new AppError('AI 次数不足，请开通会员或充值后继续使用', 402);
+  if (account.remaining < amount) throw new AppError('AI 次数不足，当前充值功能暂未开放，请稍后再试', 402);
   return account;
 }
 
@@ -661,7 +666,7 @@ async function consumeAiCredit(token: string, amount = 1) {
   free -= fromFree;
   remaining -= fromFree;
   paid -= remaining;
-  if (paid < 0) throw new AppError('AI 次数不足，请开通会员或充值后继续使用', 402);
+  if (paid < 0) throw new AppError('AI 次数不足，当前充值功能暂未开放，请稍后再试', 402);
   await checked(db().from('ai_accounts').update({
     free_credits: free,
     paid_credits: paid,
@@ -672,6 +677,7 @@ async function consumeAiCredit(token: string, amount = 1) {
 }
 
 async function createAiPaymentOrder(token: string, payload: any) {
+  throw new AppError('AI 充值功能暂未开放，当前每个用户免费体验 20 次', 503);
   const user = await requireUser(token);
   const amountCents = parseAmountCents(payload.amount_yuan ?? payload.amount ?? 1);
   const credits = Math.max(1, Math.round((amountCents / 100) * AI_CREDITS_PER_YUAN));
@@ -692,6 +698,7 @@ async function createAiPaymentOrder(token: string, payload: any) {
 }
 
 async function completePaymentOrder(token: string, orderId: string) {
+  throw new AppError('AI 充值功能暂未开放，当前每个用户免费体验 20 次', 503);
   const user = await requireUser(token);
   const order = await selectOne('payment_orders', '*', { id: orderId, user_id: user.id });
   if (!order) throw new AppError('支付订单不存在', 404);

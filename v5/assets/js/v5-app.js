@@ -217,7 +217,7 @@ function openAuth(mode) {
   $('#authHint').textContent = mode === 'reset'
     ? '输入注册 QQ 邮箱，获取验证码后设置新密码。'
     : (mode === 'register'
-      ? '注册需要先识别图形码，再发送 QQ 邮箱验证码。每个用户免费体验 5 次 AI。'
+      ? '注册需要先识别图形码，再发送 QQ 邮箱验证码。每个用户免费体验 20 次 AI。'
       : '没有账号？点击右上角注册。');
   $('#authDialog').showModal();
   if (mode !== 'login') refreshAuthCaptcha();
@@ -2184,28 +2184,15 @@ function renderAiAccount(account) {
   if (!remaining || !detail) return;
   if (!account) {
     remaining.textContent = '登录后查看';
-    detail.textContent = '每个用户免费体验 5 次 AI 功能。';
+    detail.textContent = '每个用户免费体验 20 次 AI 功能。';
     return;
   }
   remaining.textContent = `${account.remaining} 次可用`;
-  detail.textContent = `免费 ${account.free_credits} 次 · 会员 ${account.paid_credits} 次 · 已用 ${account.total_used} 次 · 1 元 ${account.rate} 次`;
+  detail.textContent = `免费 ${account.free_credits} 次 · 充值暂未开放 · 已用 ${account.total_used} 次`;
 }
 
 async function createAiPaymentOrder() {
-  if (!appState.token) return openAuth('login');
-  const amount = Number($('#paymentAmount')?.value || 1);
-  if (!amount || amount < 1) return toast('AI 充值金额最低 1 元。', true);
-  try {
-    const order = await api('/api/payments/ai-package', {
-      method: 'POST',
-      body: { amount_yuan: amount, provider: 'alipay' }
-    });
-    appState.paymentOrder = order;
-    renderPaymentOrder(order);
-    toast(`支付宝订单已创建，到账后增加 ${order.credits} 次 AI。`);
-  } catch (error) {
-    toast(error.message, true);
-  }
+  toast('AI 充值功能暂未开放，当前每个用户免费体验 20 次。', true);
 }
 
 function renderPaymentOrder(order) {
@@ -2229,17 +2216,7 @@ function renderPaymentOrder(order) {
 }
 
 async function completeAiPaymentOrder(orderId = '') {
-  const id = orderId || appState.paymentOrder?.id;
-  if (!id) return toast('请先创建支付宝充值订单。', true);
-  try {
-    const order = await api(`/api/payments/${id}/complete`, { method: 'POST', body: {} });
-    appState.paymentOrder = order;
-    renderPaymentOrder(order);
-    await refreshAiAccount();
-    toast(`AI 次数已到账：+${order.credits} 次。`);
-  } catch (error) {
-    toast(error.message, true);
-  }
+  toast('AI 充值功能暂未开放，当前每个用户免费体验 20 次。', true);
 }
 
 async function askAi() {

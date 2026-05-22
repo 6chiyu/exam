@@ -86,7 +86,8 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   '选择任务',
   'AI 对话建议',
   'AI 次数',
-  '支付宝充值',
+  '充值功能暂未开放',
+  '免费 AI 体验',
   '错题本',
   '题目收藏',
   '学习分析',
@@ -107,7 +108,6 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   '/api/favorites',
   '/api/deepseek',
   '/api/ai/account',
-  '/api/payments/ai-package',
   'HEAD_PORTRAIT_ASSETS',
   'hydrateAppLogoAvatar',
   'exam_v5_app_logo_avatar',
@@ -128,7 +128,6 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   'createAiPaymentOrder',
   'completeAiPaymentOrder',
   'aiQuotaCard',
-  'paymentAmount',
   'toggleFavoriteCurrent',
   'renderFavorites',
   'favoriteIds',
@@ -231,6 +230,10 @@ mustInclude(html, 'inputmode="numeric"', 'html');
 mustNotInclude(html, 'value="speed"', 'html');
 mustNotInclude(js, "value === 'speed'", 'js');
 mustNotInclude(extractFunction(js, 'savePaper'), "routeTo('practice')", 'savePaper');
+mustNotInclude(html, 'id="paymentAmount"', 'html');
+mustInclude(html, 'payment-box disabled', 'html');
+mustInclude(js, '每个用户免费体验 20 次', 'js');
+mustInclude(js, '充值功能暂未开放', 'js');
 
 const wrongPaperCountInput = html.match(/<input id="wrongPaperCount"[^>]*>/);
 if (!wrongPaperCountInput) {

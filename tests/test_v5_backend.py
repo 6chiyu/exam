@@ -136,11 +136,11 @@ class V5BackendTest(unittest.TestCase):
 
         token = self.app.login('mailuser', 'StrongPass123')['token']
         account = self.app.get_ai_account(token)
-        self.assertEqual(account['free_credits'], 5)
+        self.assertEqual(account['free_credits'], 20)
         self.assertEqual(account['paid_credits'], 0)
-        self.assertEqual(account['remaining'], 5)
+        self.assertEqual(account['remaining'], 20)
 
-        for _ in range(5):
+        for _ in range(20):
             self.app.consume_ai_credit(token)
         empty = self.app.get_ai_account(token)
         self.assertEqual(empty['remaining'], 0)
@@ -196,7 +196,7 @@ class V5BackendTest(unittest.TestCase):
             self.app.login('resetter', 'OldStrongPass123')
         self.assertTrue(self.app.login('resetter', 'NewStrongPass456')['token'])
 
-    def test_alipay_ai_payment_order_supports_custom_amount(self):
+    def test_ai_payment_order_is_temporarily_disabled(self):
         challenge = self.app.create_captcha(include_dev_code=True)
         verification = self.app.create_email_verification(
             'buyer@qq.com',
@@ -215,17 +215,18 @@ class V5BackendTest(unittest.TestCase):
         )
         token = self.app.login('buyer', 'StrongPass123')['token']
 
-        order = self.app.create_ai_payment_order(token, {'amount_yuan': 2.5, 'provider': 'alipay'})
-        self.assertEqual(order['provider'], 'alipay')
-        self.assertEqual(order['amount_yuan'], 2.5)
-        self.assertEqual(order['credits'], 100)
-        self.assertEqual(order['status'], 'pending')
+        with self.assertRaises(exam_core.AppError) as create_error:
+            self.app.create_ai_payment_order(token, {'amount_yuan': 2.5, 'provider': 'alipay'})
+        self.assertEqual(create_error.exception.status, 503)
+        self.assertIn('暂未开放', str(create_error.exception))
 
-        paid = self.app.complete_payment_order(token, order['id'])
-        self.assertEqual(paid['status'], 'paid')
+        with self.assertRaises(exam_core.AppError) as complete_error:
+            self.app.complete_payment_order(token, 'pay_missing')
+        self.assertEqual(complete_error.exception.status, 503)
+
         account = self.app.get_ai_account(token)
-        self.assertEqual(account['paid_credits'], 100)
-        self.assertEqual(account['remaining'], 105)
+        self.assertEqual(account['paid_credits'], 0)
+        self.assertEqual(account['remaining'], 20)
 
     def test_custom_regex_import_creates_questions(self):
         text = """1.题目

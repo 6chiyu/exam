@@ -117,7 +117,7 @@ create table if not exists public.email_verifications (
 
 create table if not exists public.ai_accounts (
   user_id text primary key references public.users(id) on delete cascade,
-  free_credits integer not null default 5,
+  free_credits integer not null default 20,
   paid_credits integer not null default 0,
   total_used integer not null default 0,
   updated_at timestamptz not null default now()

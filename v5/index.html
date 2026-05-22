@@ -338,12 +338,11 @@ D.
             <div>
               <p class="eyebrow">AI 次数</p>
               <strong id="aiRemaining">登录后查看</strong>
-              <span id="aiQuotaDetail">每个用户免费体验 5 次 AI 功能。</span>
+              <span id="aiQuotaDetail">每个用户免费体验 20 次 AI 功能。</span>
             </div>
-            <div class="payment-box">
-              <label>自定义金额（元）<input id="paymentAmount" type="number" min="1" step="0.01" value="1"></label>
-              <button class="btn success" data-action="createAiPaymentOrder">支付宝充值</button>
-              <small>1 元 = 40 次 AI，可自定义金额。</small>
+            <div class="payment-box disabled">
+              <strong>充值功能暂未开放</strong>
+              <small>当前先开放 20 次免费 AI 体验，后续再恢复会员/支付宝充值。</small>
             </div>
             <div id="paymentOrderBox" class="payment-order hidden"></div>
           </div>

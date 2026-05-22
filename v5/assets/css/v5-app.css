@@ -947,6 +947,15 @@ textarea {
   border-radius: 18px;
 }
 
+.payment-box.disabled {
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.payment-box.disabled strong {
+  color: var(--ink);
+}
+
 .payment-order {
   grid-column: 1 / -1;
   display: grid;
