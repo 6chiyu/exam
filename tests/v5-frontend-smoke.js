@@ -6,6 +6,7 @@ const rootHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'v5', 'index.html'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'v5', 'assets', 'js', 'v5-app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'v5', 'assets', 'css', 'v5-app.css'), 'utf8');
+const apiFunction = fs.readFileSync(path.join(root, 'netlify', 'functions', 'api.ts'), 'utf8');
 
 new Function(js);
 
@@ -233,6 +234,9 @@ mustInclude(rootHtml, 'maxlength="5"', 'root html');
 mustInclude(rootHtml, 'inputmode="numeric"', 'root html');
 mustInclude(html, 'maxlength="5"', 'html');
 mustInclude(html, 'inputmode="numeric"', 'html');
+mustInclude(rootHtml, 'id="emailCode" inputmode="numeric" maxlength="6"', 'root html');
+mustInclude(html, 'id="authEmailCode" inputmode="numeric" maxlength="6"', 'html');
+mustInclude(apiFunction, 'EMAIL_CODE_LENGTH = 6', 'netlify function');
 
 mustNotInclude(html, 'value="speed"', 'html');
 mustNotInclude(js, "value === 'speed'", 'js');

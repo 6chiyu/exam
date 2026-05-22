@@ -8,6 +8,7 @@ const FREE_AI_CREDITS = 20;
 const AI_CREDITS_PER_YUAN = 40;
 const EMAIL_CODE_TTL_SECONDS = 10 * 60;
 const EMAIL_CODE_COOLDOWN_SECONDS = 60;
+const EMAIL_CODE_LENGTH = 6;
 const CAPTCHA_TTL_SECONDS = 5 * 60;
 const CAPTCHA_CHARS = '0123456789';
 const INITIAL_BANK_TITLE = '计算机网络基础初始题库';
@@ -272,7 +273,7 @@ async function createEmailVerification(emailValue: string, options: any = {}) {
   if (recent.error) throw recent.error;
   if (recent.data?.length) throw new AppError('验证码已发送，请 60 秒后再试', 429);
   if (options.requireCaptcha) await verifyCaptcha(options.captchaId, options.captchaCode);
-  const code = String(crypto.randomInt(1000000)).padStart(6, '0');
+  const code = generateEmailCode();
   const salt = randomHex(8);
   await checked(db().from('email_verifications').insert({
     id: newId('mail'),
@@ -332,6 +333,10 @@ async function verifyCaptcha(captchaId: string, captchaCode: string) {
 }
 
 async function verifyEmailCode(email: string, code: string, purpose = 'register') {
+  const normalizedCode = stripCodeSpaces(code);
+  if (!new RegExp(`^\\d{${EMAIL_CODE_LENGTH}}$`).test(normalizedCode)) {
+    throw new AppError(`邮箱验证码必须是 ${EMAIL_CODE_LENGTH} 位数字`);
+  }
   const { data, error } = await db()
     .from('email_verifications')
     .select('*')
@@ -343,7 +348,7 @@ async function verifyEmailCode(email: string, code: string, purpose = 'register'
   if (error) throw error;
   const row = data?.[0];
   if (!row || Number(row.expires_at) < nowSeconds()) throw new AppError('邮箱验证码不存在或已过期');
-  if (row.code_hash !== hashPassword(stripCodeSpaces(code), row.salt)) throw new AppError('邮箱验证码错误');
+  if (row.code_hash !== hashPassword(normalizedCode, row.salt)) throw new AppError('邮箱验证码错误');
   await checked(db().from('email_verifications').update({ used_at: utcNow() }).eq('id', row.id));
 }
 
@@ -982,6 +987,10 @@ function aiAccountFromRow(row: any) {
   return { free_credits: free, paid_credits: paid, remaining: free + paid, total_used: Number(row.total_used || 0), rate: AI_CREDITS_PER_YUAN, updated_at: row.updated_at };
 }
 
+function generateEmailCode() {
+  return String(crypto.randomInt(10 ** EMAIL_CODE_LENGTH)).padStart(EMAIL_CODE_LENGTH, '0');
+}
+
 function paymentOrderFromRow(row: any) {
   return {
     id: row.id,
@@ -1075,6 +1084,9 @@ function buildLearningRecommendations(statsValue: any) {
 }
 
 async function sendQqEmailCode(email: string, code: string, purpose = 'register') {
+  if (!new RegExp(`^\\d{${EMAIL_CODE_LENGTH}}$`).test(String(code || ''))) {
+    throw new AppError(`QQ 邮箱验证码必须是 ${EMAIL_CODE_LENGTH} 位数字`);
+  }
   const user = process.env.QQ_SMTP_USER;
   const pass = process.env.QQ_SMTP_AUTH_CODE;
   if (!user || !pass) return false;

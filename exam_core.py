@@ -24,6 +24,7 @@ FREE_AI_CREDITS = 20
 AI_CREDITS_PER_YUAN = 40
 EMAIL_CODE_TTL_SECONDS = 10 * 60
 EMAIL_CODE_COOLDOWN_SECONDS = 60
+EMAIL_CODE_LENGTH = 6
 CAPTCHA_TTL_SECONDS = 5 * 60
 CAPTCHA_CHARS = '0123456789'
 
@@ -263,7 +264,7 @@ class ExamApp:
         purpose = clean_text(purpose) or 'register'
         if not is_qq_email(email):
             raise AppError('请使用 QQ 邮箱接收验证码')
-        code = f'{secrets.randbelow(1000000):06d}'
+        code = generate_email_code()
         salt = secrets.token_hex(8)
         expires_at = int(time.time()) + EMAIL_CODE_TTL_SECONDS
         with self.db() as conn:
@@ -435,6 +436,8 @@ class ExamApp:
 
     def _verify_email_code(self, conn, email, code, purpose='register'):
         code = re.sub(r'\s+', '', str(code or ''))
+        if not re.fullmatch(rf'\d{{{EMAIL_CODE_LENGTH}}}', code):
+            raise AppError(f'邮箱验证码必须是 {EMAIL_CODE_LENGTH} 位数字')
         now_ts = int(time.time())
         row = conn.execute(
             """
@@ -1477,6 +1480,8 @@ def qq_smtp_configured():
 
 
 def send_qq_email_code(email, code, purpose='register'):
+    if not re.fullmatch(rf'\d{{{EMAIL_CODE_LENGTH}}}', str(code or '')):
+        raise AppError(f'QQ 邮箱验证码必须是 {EMAIL_CODE_LENGTH} 位数字')
     smtp_user = os.environ.get('QQ_SMTP_USER')
     smtp_code = os.environ.get('QQ_SMTP_AUTH_CODE')
     if not smtp_user or not smtp_code:
@@ -1494,6 +1499,10 @@ def send_qq_email_code(email, code, purpose='register'):
         return True
     except Exception as error:
         raise AppError(f'QQ 邮箱验证码发送失败：{error}', 502)
+
+
+def generate_email_code():
+    return f'{secrets.randbelow(10 ** EMAIL_CODE_LENGTH):0{EMAIL_CODE_LENGTH}d}'
 
 
 def render_captcha_svg(code):

@@ -109,6 +109,17 @@ class V5BackendTest(unittest.TestCase):
         )
         self.assertEqual(verification['email'], 'student@qq.com')
         self.assertIn('dev_code', verification)
+        self.assertRegex(verification['dev_code'], r'^\d{6}$')
+
+        for index in range(3):
+            code_result = self.app.create_email_verification(
+                f'student{index}@qq.com',
+                deliver=False,
+                captcha_id='',
+                captcha_code='',
+                require_captcha=False
+            )
+            self.assertRegex(code_result['dev_code'], r'^\d{6}$')
 
         fresh_challenge = self.app.create_captcha(include_dev_code=True)
         with self.assertRaises(exam_core.AppError) as cooldown_error:
@@ -191,6 +202,7 @@ class V5BackendTest(unittest.TestCase):
         )
         self.assertEqual(reset_code['email'], 'resetter@qq.com')
         self.assertIn('dev_code', reset_code)
+        self.assertRegex(reset_code['dev_code'], r'^\d{6}$')
 
         fresh_challenge = self.app.create_captcha(include_dev_code=True)
         with self.assertRaises(exam_core.AppError) as cooldown_error:
