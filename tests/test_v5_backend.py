@@ -68,6 +68,22 @@ class V5BackendTest(unittest.TestCase):
         profile = self.app.require_user(logged_in['token'])
         self.assertEqual(profile['username'], 'alice')
 
+    def test_register_username_only_requires_length(self):
+        username = '张三 @2026!'
+        registered = self.app.register(username, 'StrongPass123', '显示昵称')
+        self.assertEqual(registered['username'], username)
+        self.assertEqual(self.app.login(username, 'StrongPass123')['user']['nickname'], '显示昵称')
+
+        with self.assertRaises(exam_core.AppError) as short_error:
+            self.app.register('ab', 'StrongPass123', '太短')
+        self.assertEqual(short_error.exception.status, 400)
+        self.assertIn('3-32', str(short_error.exception))
+
+        with self.assertRaises(exam_core.AppError) as long_error:
+            self.app.register('用户' * 17, 'StrongPass123', '太长')
+        self.assertEqual(long_error.exception.status, 400)
+        self.assertIn('3-32', str(long_error.exception))
+
     def test_init_db_seeds_existing_users_once(self):
         user = self.app.register('seeded', 'StrongPass123', 'Seeded')
         token = self.app.login('seeded', 'StrongPass123')['token']

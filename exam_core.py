@@ -352,8 +352,8 @@ class ExamApp:
         username = clean_text(username)
         nickname = clean_text(nickname) or username
         email = normalize_email(email)
-        if not re.fullmatch(r'[A-Za-z0-9_\-\u4e00-\u9fa5]{3,32}', username):
-            raise AppError('用户名需为 3-32 位中文、字母、数字、下划线或短横线')
+        if not 3 <= len(username) <= 32:
+            raise AppError('账号长度需为 3-32 位')
         if len(password or '') < 8:
             raise AppError('密码至少 8 位')
         if require_email or email or email_code:

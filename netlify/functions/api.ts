@@ -195,8 +195,8 @@ async function register(payload: any) {
   const nickname = cleanText(payload.nickname) || username;
   const email = normalizeEmail(payload.email);
   const emailCode = cleanText(payload.emailCode || payload.email_code);
-  if (!/^[A-Za-z0-9_\-\u4e00-\u9fa5]{3,32}$/.test(username)) {
-    throw new AppError('用户名需为 3-32 位中文、字母、数字、下划线或短横线');
+  if (username.length < 3 || username.length > 32) {
+    throw new AppError('账号长度需为 3-32 位');
   }
   if (password.length < 8) throw new AppError('密码至少 8 位');
   if (!isQqEmail(email)) throw new AppError('注册需要通过 QQ 邮箱验证');
