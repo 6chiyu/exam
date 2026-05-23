@@ -13,6 +13,7 @@ const DEFAULT_KEYBOARD_SETTINGS = {
 
 const WRONGBOOK_PAGE_SIZE = 5;
 const EMAIL_CODE_COOLDOWN_SECONDS = 60;
+const STANDALONE_PRACTICE_PAGE = 'practice.html';
 
 const HEAD_PORTRAIT_ASSETS = [
   '../assets/head%20portrait/1.jpg',
@@ -65,6 +66,7 @@ const characterAssets = [
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+const isStandalonePracticePage = () => document.body.dataset.page === 'practice-standalone';
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -79,11 +81,17 @@ function init() {
   document.addEventListener('keydown', handlePracticeKeydown);
   updateUserLabel();
   renderAuthEmailCooldown();
-  routeTo(location.hash.replace('#', '') || 'home');
+  syncPracticeLandingState();
+  if (!isStandalonePracticePage()) {
+    routeTo(location.hash.replace('#', '') || 'home');
+  }
   if (appState.token) {
-    refreshAll();
+    refreshAll().then(() => {
+      if (isStandalonePracticePage()) autoBootStandalonePractice();
+    });
   } else {
     renderGuestState();
+    syncPracticeLandingState();
   }
 }
 
@@ -94,6 +102,66 @@ function bindNavigation() {
       routeTo(element.dataset.viewLink || element.dataset.viewButton);
     });
   });
+}
+
+function openStandalonePracticePage({ paperId = '', mode = '', source = '' } = {}) {
+  const url = new URL(STANDALONE_PRACTICE_PAGE, window.location.href);
+  if (paperId) url.searchParams.set('paperId', paperId);
+  if (mode) url.searchParams.set('mode', mode);
+  if (source) url.searchParams.set('source', source);
+  window.location.href = url.toString();
+}
+
+function readStandalonePracticeLaunch() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    paperId: params.get('paperId') || '',
+    mode: params.get('mode') || '',
+    source: params.get('source') || ''
+  };
+}
+
+function syncPracticeLandingState() {
+  if (!isStandalonePracticePage()) return;
+  const launch = readStandalonePracticeLaunch();
+  const title = $('#focusPaperTitle');
+  const meta = $('#focusPaperMeta');
+  const state = $('#focusSessionState');
+  if (title) {
+    title.textContent = appState.currentPaper?.title || (launch.source === 'wrongbook' ? '错题重练刷题舱' : '选择试卷后进入沉浸刷题');
+  }
+  if (meta) {
+    const count = appState.currentPaper?.questions?.length || 0;
+    const mode = $('#practiceMode')?.value || launch.mode || 'practice';
+    meta.textContent = count ? `${count} 题 · ${mode === 'exam' ? '考试模式' : '练习模式'}` : '支持键盘刷题、AI 解析、收藏与提交试卷';
+  }
+  if (state) {
+    state.textContent = appState.session ? '刷题进行中' : (appState.token ? '等待开始本轮训练' : '请先登录再进入刷题舱');
+  }
+}
+
+async function autoBootStandalonePractice() {
+  if (!isStandalonePracticePage()) return;
+  const launch = readStandalonePracticeLaunch();
+  if (!appState.token) {
+    syncPracticeLandingState();
+    return;
+  }
+  if (launch.mode && $('#practiceMode')) {
+    $('#practiceMode').value = launch.mode;
+  }
+  if (launch.source === 'wrongbook') {
+    await startWrongPractice({ openStandalone: false });
+    return;
+  }
+  if (launch.paperId && $('#paperSelect')) {
+    $('#paperSelect').value = launch.paperId;
+  }
+  if (launch.paperId) {
+    await startPractice({ paperId: launch.paperId, mode: launch.mode, openStandalone: false });
+    return;
+  }
+  syncPracticeLandingState();
 }
 
 function hydrateAppLogoAvatar() {
@@ -167,6 +235,7 @@ function bindActions() {
 }
 
 function routeTo(view) {
+  if (isStandalonePracticePage()) return;
   $$('.app-view').forEach((node) => node.classList.remove('active'));
   $(`#${view}View`)?.classList.add('active');
   $$('[data-view-link], [data-view-button]').forEach((node) => {
@@ -351,11 +420,14 @@ async function refreshAuthCaptcha() {
 }
 
 function updateUserLabel() {
-  $('#currentUserLabel').textContent = appState.user ? getDisplayNickname(appState.user) : '未登录';
+  if ($('#currentUserLabel')) {
+    $('#currentUserLabel').textContent = appState.user ? getDisplayNickname(appState.user) : '未登录';
+  }
   $$('[data-open-auth]').forEach((button) => {
     button.classList.toggle('hidden', Boolean(appState.user));
   });
   $('#logoutButton')?.classList.toggle('hidden', !appState.user);
+  syncPracticeLandingState();
 }
 
 function logoutCurrentUser() {
@@ -382,12 +454,12 @@ function logoutCurrentUser() {
 }
 
 function renderEmptyStats() {
-  $('#statPapers').textContent = '0';
-  $('#statAnswers').textContent = '0';
-  $('#statAccuracy').textContent = '0%';
-  $('#statWrong').textContent = '0';
-  $('#statDue').textContent = '0';
-  $('#todayAdvice').textContent = '先登录，然后导入一套试卷。';
+  if ($('#statPapers')) $('#statPapers').textContent = '0';
+  if ($('#statAnswers')) $('#statAnswers').textContent = '0';
+  if ($('#statAccuracy')) $('#statAccuracy').textContent = '0%';
+  if ($('#statWrong')) $('#statWrong').textContent = '0';
+  if ($('#statDue')) $('#statDue').textContent = '0';
+  if ($('#todayAdvice')) $('#todayAdvice').textContent = '先登录，然后导入一套试卷。';
 }
 
 async function refreshAll() {
@@ -399,16 +471,18 @@ async function refreshAll() {
 async function refreshStats() {
   if (!appState.token) return;
   const stats = await api('/api/stats');
-  $('#statPapers').textContent = stats.papers;
-  $('#statAnswers').textContent = stats.answers;
-  $('#statAccuracy').textContent = `${stats.accuracy}%`;
-  $('#statWrong').textContent = stats.wrong;
-  $('#statDue').textContent = stats.due;
-  $('#todayAdvice').textContent = stats.due
-    ? `有 ${stats.due} 道题该复习，先稳住记忆曲线。`
-    : stats.wrong
-      ? `有 ${stats.wrong} 道错题待整理，先做错因归类。`
-      : '状态不错，可以开始一轮新题速刷。';
+  if ($('#statPapers')) $('#statPapers').textContent = stats.papers;
+  if ($('#statAnswers')) $('#statAnswers').textContent = stats.answers;
+  if ($('#statAccuracy')) $('#statAccuracy').textContent = `${stats.accuracy}%`;
+  if ($('#statWrong')) $('#statWrong').textContent = stats.wrong;
+  if ($('#statDue')) $('#statDue').textContent = stats.due;
+  if ($('#todayAdvice')) {
+    $('#todayAdvice').textContent = stats.due
+      ? `有 ${stats.due} 道题该复习，先稳住记忆曲线。`
+      : stats.wrong
+        ? `有 ${stats.wrong} 道错题待整理，先做错因归类。`
+        : '状态不错，可以开始一轮新题速刷。';
+  }
 }
 
 async function refreshPapers() {
@@ -417,15 +491,22 @@ async function refreshPapers() {
   appState.papers = result.papers || [];
   renderPaperCards();
   renderPaperSelect();
+  syncPracticeLandingState();
 }
 
 function renderGuestState() {
-  $('#paperCards').innerHTML = '<div class="paper-card">请先注册或登录，系统会把题库保存到 SQLite 数据库。</div>';
-  $('#learningPath').innerHTML = '<div class="path-card">登录后显示学习路线。</div>';
+  if ($('#paperCards')) {
+    $('#paperCards').innerHTML = '<div class="paper-card">请先注册或登录，系统会把题库保存到 SQLite 数据库。</div>';
+  }
+  if ($('#learningPath')) {
+    $('#learningPath').innerHTML = '<div class="path-card">登录后显示学习路线。</div>';
+  }
+  syncPracticeLandingState();
 }
 
 function renderPaperCards() {
   const container = $('#paperCards');
+  if (!container) return;
   if (!appState.papers.length) {
     container.innerHTML = '<div class="paper-card">还没有试卷。进入题库管理，粘贴题目后保存。</div>';
     return;
@@ -455,9 +536,8 @@ function renderPaperCards() {
   `).join('');
   $$('[data-paper-id]').forEach((button) => {
     button.addEventListener('click', () => {
-      $('#paperSelect').value = button.dataset.paperId;
-      routeTo('practice');
-      startPractice();
+      if ($('#paperSelect')) $('#paperSelect').value = button.dataset.paperId;
+      startPractice({ paperId: button.dataset.paperId });
     });
   });
   $$('[data-paper-preview]').forEach((button) => {
@@ -505,9 +585,8 @@ function renderBankGroups() {
   `).join('');
   $$('[data-bank-start]').forEach((button) => {
     button.addEventListener('click', () => {
-      $('#paperSelect').value = button.dataset.bankStart;
-      routeTo('practice');
-      startPractice();
+      if ($('#paperSelect')) $('#paperSelect').value = button.dataset.bankStart;
+      startPractice({ paperId: button.dataset.bankStart });
     });
   });
   $$('[data-bank-edit-meta], [data-bank-edit-questions]').forEach((button) => {
@@ -702,8 +781,10 @@ function toggleImportStudio() {
 }
 
 function renderPaperSelect() {
+  const paperSelect = $('#paperSelect');
+  if (!paperSelect) return;
   const groups = groupPapers(appState.papers);
-  $('#paperSelect').innerHTML = Object.entries(groups).map(([groupName, papers]) => `
+  paperSelect.innerHTML = Object.entries(groups).map(([groupName, papers]) => `
     <optgroup label="${escapeHtml(groupName)}">
       ${papers.map((paper) => `<option value="${paper.id}">${escapeHtml(paper.title)}（${paper.question_count}题）</option>`).join('')}
     </optgroup>
@@ -711,7 +792,9 @@ function renderPaperSelect() {
 }
 
 function renderLearningPath() {
-  $('#learningPath').innerHTML = [
+  const learningPath = $('#learningPath');
+  if (!learningPath) return;
+  learningPath.innerHTML = [
     ['1. 导入试卷', '先把 PDF/Word 复制出的题目文本粘贴进导入区，自定义正则或 AI 识别。'],
     ['2. 首轮速刷', '用键盘完成一轮筛题，把不会的题自动沉淀到错题本。'],
     ['3. 错因整理', '给错题打上概念不清、审题失误、记忆混淆等原因。'],
@@ -917,24 +1000,31 @@ async function savePaper() {
 }
 
 async function quickPractice() {
-  routeTo('practice');
   if (!appState.papers.length) {
     toast('先导入试卷，再开始刷题。', true);
-    routeTo('bank');
+    if (!isStandalonePracticePage()) routeTo('bank');
     return;
   }
   await startPractice();
 }
 
-async function startPractice() {
+async function startPractice(options = {}) {
   if (!appState.token) return openAuth('login');
-  const paperId = $('#paperSelect').value || appState.papers[0]?.id;
+  if (options.mode && $('#practiceMode')) {
+    $('#practiceMode').value = options.mode;
+  }
+  const paperId = options.paperId || $('#paperSelect')?.value || appState.papers[0]?.id;
   if (!paperId) return toast('请先添加试卷。', true);
+  const mode = options.mode || $('#practiceMode')?.value || 'practice';
+  if (!isStandalonePracticePage() && options.openStandalone !== false) {
+    openStandalonePracticePage({ paperId, mode });
+    return;
+  }
   try {
     appState.currentPaper = await api(`/api/papers/${paperId}`);
     appState.session = await api('/api/sessions', {
       method: 'POST',
-      body: { paperId, mode: $('#practiceMode').value }
+      body: { paperId, mode }
     });
     appState.index = 0;
     appState.answers = {};
@@ -944,12 +1034,18 @@ async function startPractice() {
     setPracticeVisible(true);
     renderQuestion();
     scrollToPracticeStage();
+    syncPracticeLandingState();
   } catch (error) {
     toast(error.message, true);
   }
 }
 
-async function startWrongPractice() {
+async function startWrongPractice(options = {}) {
+  if (!appState.token) return openAuth('login');
+  if (!isStandalonePracticePage() && options.openStandalone !== false) {
+    openStandalonePracticePage({ source: 'wrongbook', mode: 'practice' });
+    return;
+  }
   const result = await api('/api/wrongbook');
   const items = result.wrongbook || [];
   if (!items.length) return toast('错题本为空。', true);
@@ -971,7 +1067,7 @@ async function startWrongPractice() {
   appState.checked = {};
   setPracticeVisible(true);
   renderQuestion();
-  routeTo('practice');
+  syncPracticeLandingState();
   scrollToPracticeStage();
 }
 
@@ -1013,10 +1109,9 @@ async function createWrongPaper() {
       await clearGeneratedSources(selectedItems);
     }
     await refreshPapers();
-    $('#paperSelect').value = savedPaper.id;
+    if ($('#paperSelect')) $('#paperSelect').value = savedPaper.id;
     appState.session = null;
-    routeTo('practice');
-    await startPractice();
+    await startPractice({ paperId: savedPaper.id });
     toast(`已保存到题库“${title}”，共 ${selectedItems.length} 题。`);
   } catch (error) {
     toast(error.message, true);
@@ -1321,11 +1416,13 @@ function renderQuestion() {
   updateFavoriteButtons();
   renderAnswerSheet();
   updatePracticeStats();
+  syncPracticeLandingState();
 }
 
 function setPracticeVisible(visible) {
   $('.practice-stage')?.classList.toggle('hidden', !visible);
   $('.mobile-practice-bar')?.classList.toggle('hidden', !visible);
+  document.body.classList.toggle('practice-shell-ready', Boolean(visible) && isStandalonePracticePage());
 }
 
 function scrollToPracticeStage() {
@@ -1713,6 +1810,7 @@ function updatePracticeStats() {
   const correct = checked.filter((item) => item.correct).length;
   $('#practiceProgress').textContent = `${checked.length} / ${total}`;
   $('#practiceAccuracy').textContent = `正确率 ${checked.length ? Math.round(correct / checked.length * 100) : 0}%`;
+  syncPracticeLandingState();
 }
 
 function readKeyboardSettings() {
@@ -1863,10 +1961,12 @@ async function loadWrongbook(showMessage = true) {
 }
 
 function renderWrongbookList(list) {
+  const wrongbookList = $('#wrongbookList');
+  if (!wrongbookList) return;
   const pagination = paginatePaperItems(list, appState.wrongbookPage);
   appState.wrongbookPage = pagination.page;
   const pageItems = pagination.items;
-  $('#wrongbookList').innerHTML = list.length ? pageItems.map((item) => `
+  wrongbookList.innerHTML = list.length ? pageItems.map((item) => `
       <article class="wrong-card">
         <label class="paper-pick">
           <input type="checkbox" data-paper-pick="wrong:${item.id}" ${appState.selectedPaperItems.has(paperPickKey('wrong', item)) ? 'checked' : ''}>
@@ -2016,7 +2116,7 @@ function markWrongSaved(id, payload) {
 }
 
 async function renderAnalytics() {
-  if (!appState.token) return;
+  if (!appState.token || !$('#analysisCards') || !$('#reviewQueue') || !$('#bigDataInsights')) return;
   const stats = await api('/api/stats');
   $('#analysisCards').innerHTML = [
     ['题库规模', stats.papers, '套试卷'],
@@ -2041,6 +2141,7 @@ async function renderAnalytics() {
 }
 
 function renderBigDataInsights(stats, reviews = []) {
+  if (!$('#bigDataInsights')) return;
   const accuracy = Number(stats.accuracy || 0);
   const recentAccuracy = Number(stats.recent_accuracy || 0);
   const healthScore = Math.max(0, Math.min(100, Math.round(

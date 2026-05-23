@@ -105,6 +105,263 @@ textarea {
   object-fit: cover;
 }
 
+.feature-hub {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0 4px;
+}
+
+.feature-launcher {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(53, 74, 105, 0.1);
+  box-shadow: 0 18px 45px rgba(21, 44, 82, 0.12);
+}
+
+.feature-launcher img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.feature-launcher strong,
+.feature-launcher span,
+.feature-launcher .btn {
+  grid-column: 2;
+}
+
+.feature-launcher span {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.feature-launcher-primary {
+  background:
+    linear-gradient(135deg, rgba(19, 39, 86, 0.96), rgba(34, 105, 174, 0.9)),
+    rgba(255, 255, 255, 0.8);
+  color: #f8fbff;
+}
+
+.feature-launcher-primary span,
+.feature-launcher-primary .eyebrow {
+  color: rgba(238, 245, 255, 0.86);
+}
+
+.launcher-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.launcher-copy h2 {
+  margin: 0 0 10px;
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.08;
+}
+
+.launcher-copy p:last-of-type {
+  margin-bottom: 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.launcher-visual {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(17, 32, 68, 0.95), rgba(42, 84, 148, 0.86));
+}
+
+.launcher-visual img {
+  max-width: 220px;
+  width: 100%;
+  object-fit: contain;
+}
+
+.launcher-points {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.launcher-points span,
+.focus-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: #ecf4ff;
+  background: rgba(255, 255, 255, 0.14);
+  font-weight: 700;
+}
+
+.practice-shell {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.focus-header {
+  grid-template-columns: 260px 1fr auto;
+}
+
+.focus-nav {
+  justify-content: flex-start;
+}
+
+.focus-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 22px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.focus-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(32px, 3.6vw, 54px);
+  line-height: 1.02;
+}
+
+.focus-hero p:last-of-type {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.focus-hero-status {
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(16, 30, 62, 0.96), rgba(33, 96, 168, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.focus-paper-title {
+  color: #fff;
+  font-size: 26px;
+  line-height: 1.18;
+}
+
+.focus-paper-meta {
+  color: rgba(238, 245, 255, 0.84);
+  line-height: 1.7;
+}
+
+.focus-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.focus-side {
+  position: sticky;
+  top: 102px;
+  display: grid;
+  gap: 18px;
+}
+
+.focus-main .practice-stage {
+  min-height: 72vh;
+}
+
+.focus-shortcut-card {
+  background: linear-gradient(180deg, rgba(16, 30, 62, 0.96), rgba(28, 64, 118, 0.92));
+  color: #fff;
+}
+
+.focus-shortcut-card span {
+  color: rgba(236, 244, 255, 0.82);
+}
+
+.focus-side-card strong {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.6;
+}
+
+body[data-page="practice-standalone"] {
+  background:
+    linear-gradient(120deg, rgba(10, 20, 42, 0.84), rgba(27, 58, 115, 0.72)),
+    radial-gradient(circle at 18% 18%, rgba(237, 106, 44, 0.18), transparent 24%),
+    radial-gradient(circle at 88% 14%, rgba(34, 197, 164, 0.14), transparent 18%),
+    url("../../../assets/backgrounds/blue-study-scene.jpg");
+}
+
+body[data-page="practice-standalone"]::before {
+  background:
+    linear-gradient(180deg, rgba(245, 248, 255, 0.1), rgba(245, 248, 255, 0.04)),
+    radial-gradient(circle at 16% 10%, rgba(255, 255, 255, 0.18), transparent 26%);
+}
+
+body[data-page="practice-standalone"] .site-header {
+  background: rgba(245, 249, 255, 0.74);
+}
+
+body[data-page="practice-standalone"] .practice-stage {
+  box-shadow: 0 28px 80px rgba(9, 21, 44, 0.24);
+}
+
+body.practice-shell-ready[data-page="practice-standalone"] .focus-hero-status {
+  background: linear-gradient(145deg, rgba(17, 64, 31, 0.9), rgba(22, 136, 109, 0.9));
+}
+
+@media (max-width: 1180px) {
+  .feature-hub {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .launcher-panel,
+  .focus-hero,
+  .focus-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-side {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .feature-hub {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-launcher {
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .feature-launcher img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .practice-shell {
+    padding: 16px;
+  }
+
+  .focus-hero h1,
+  .launcher-copy h2 {
+    font-size: 28px;
+  }
+
+  .focus-paper-title {
+    font-size: 22px;
+  }
+}
+
 .logo strong,
 .logo small {
   display: block;

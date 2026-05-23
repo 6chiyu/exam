@@ -101,6 +101,63 @@
           <article><img class="stat-figure" src="../assets/characters/stat-review.png" alt=""><span>待复习</span><strong id="statDue">0</strong></article>
         </div>
 
+        <section class="feature-hub">
+          <article class="feature-launcher feature-launcher-primary">
+            <img src="../assets/characters/card-character-1.png" alt="">
+            <div>
+              <p class="eyebrow">题库工作流</p>
+              <strong>AI 导入 + 题库编辑</strong>
+              <span>先导入，再编辑。题库工作台负责导入、分组、修改题目与删除试卷。</span>
+            </div>
+            <button class="btn primary" data-view-button="bank">打开题库工作台</button>
+          </article>
+          <article class="feature-launcher">
+            <img src="../assets/characters/card-character-2.png" alt="">
+            <div>
+              <p class="eyebrow">沉浸刷题</p>
+              <strong>新独立刷题舱</strong>
+              <span>按开始后直接进入新的 Focus Practice Cabin，不再被其他模块干扰。</span>
+            </div>
+            <button class="btn dark" data-action="quickPractice">进入新刷题舱</button>
+          </article>
+          <article class="feature-launcher">
+            <img src="../assets/characters/card-character-3.png" alt="">
+            <div>
+              <p class="eyebrow">错题闭环</p>
+              <strong>错题复盘 + 自定义组卷</strong>
+              <span>把错题和收藏题目重组成一套新试卷，直接进入新刷题页。</span>
+            </div>
+            <button class="btn ghost" data-view-button="wrongbook">整理错题</button>
+          </article>
+          <article class="feature-launcher">
+            <img src="../assets/characters/card-character-4.png" alt="">
+            <div>
+              <p class="eyebrow">考前回看</p>
+              <strong>收藏题目快速复习</strong>
+              <span>把重点题收藏起来，到考前只看高价值的题。</span>
+            </div>
+            <button class="btn ghost" data-view-button="favorites">查看收藏</button>
+          </article>
+          <article class="feature-launcher">
+            <img src="../assets/characters/card-character-5.png" alt="">
+            <div>
+              <p class="eyebrow">本地分析</p>
+              <strong>用数据看到弱点</strong>
+              <span>自动汇总薄弱分组、错因分布、高耗时题目，不需额外调用 AI。</span>
+            </div>
+            <button class="btn ghost" data-view-button="analytics">查看分析</button>
+          </article>
+          <article class="feature-launcher">
+            <img src="../assets/characters/ai-mascot.png" alt="">
+            <div>
+              <p class="eyebrow">AI 助教</p>
+              <strong>对话建议 + 记忆生成</strong>
+              <span>可以直接针对当前错题、收藏、当前题目组合成复习建议。</span>
+            </div>
+            <button class="btn ghost" data-view-button="ai">打开 AI 助教</button>
+          </article>
+        </section>
+
         <div class="dashboard-grid">
           <section class="panel">
             <div class="panel-title">
@@ -179,6 +236,26 @@ D.
       </section>
 
       <section id="practiceView" class="app-view">
+        <section class="panel launcher-panel">
+          <div class="launcher-copy">
+            <p class="eyebrow">Focus Practice Cabin</p>
+            <h2>从这里先选卷，开始后直接进入新的独立刷题页</h2>
+            <p>新刷题舱会保留键盘设置、AI 解析、错题记录、收藏功能，但把其他工作台收起来，只留下做题必要信息。</p>
+            <div class="button-row">
+              <button class="btn primary" data-action="startPractice">打开新刷题舱</button>
+              <button class="btn dark" data-action="startWrongPractice">直接练错题</button>
+            </div>
+          </div>
+          <div class="launcher-visual">
+            <img src="../assets/characters/hero-strip-keyboard.png" alt="">
+            <div class="launcher-points">
+              <span>全屏专注</span>
+              <span>AI 提示</span>
+              <span>解析编辑</span>
+              <span>快捷键可保存</span>
+            </div>
+          </div>
+        </section>
         <div class="question-workbench">
           <aside class="practice-control panel">
             <h2>刷题设置</h2>
@@ -189,7 +266,7 @@ D.
                 <option value="exam">考试模式：隐藏答案与解析</option>
               </select>
             </label>
-            <button class="btn primary block" data-action="startPractice">开始刷题</button>
+            <button class="btn primary block" data-action="startPractice">进入新刷题舱</button>
             <button class="btn success block" data-action="finishSession">未完成也可提交</button>
             <button class="btn ghost block" data-action="startWrongPractice">只练错题</button>
             <div class="mini-stats">

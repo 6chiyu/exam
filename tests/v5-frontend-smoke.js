@@ -4,6 +4,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const rootHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const html = fs.readFileSync(path.join(root, 'v5', 'index.html'), 'utf8');
+const practiceHtml = fs.readFileSync(path.join(root, 'v5', 'practice.html'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'v5', 'assets', 'js', 'v5-app.js'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'v5', 'assets', 'css', 'v5-app.css'), 'utf8');
 const apiFunction = fs.readFileSync(path.join(root, 'netlify', 'functions', 'api.ts'), 'utf8');
@@ -100,6 +101,18 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   '学习分析',
   '键盘刷题'
 ].forEach((text) => mustInclude(html, text, 'html'));
+
+[
+  'practice-shell',
+  'data-page="practice-standalone"',
+  'focus-hero',
+  'focus-paper-title',
+  'focus-paper-meta',
+  'data-action="startPractice"',
+  'data-action="startWrongPractice"',
+  'practiceStage',
+  'answerSheet'
+].forEach((text) => mustInclude(practiceHtml, text, 'practice html'));
 
 [
   '/api/register',
@@ -220,7 +233,11 @@ mustNotInclude(rootHtml, '>进入 v5<', 'root html');
   'renderBigDataInsights',
   'renderTrendBars',
   'formatDuration',
-  'bigDataInsights'
+  'bigDataInsights',
+  'openStandalonePracticePage',
+  'isStandalonePracticePage',
+  'autoBootStandalonePractice',
+  'syncPracticeLandingState'
 ].forEach((text) => mustInclude(js, text, 'js'));
 
 [
@@ -258,7 +275,7 @@ const createWrongPaperSource = extractFunction(js, 'createWrongPaper');
 mustInclude(createWrongPaperSource, '/api/papers', 'createWrongPaper');
 mustInclude(createWrongPaperSource, "source: 'wrongbook_custom'", 'createWrongPaper');
 mustInclude(createWrongPaperSource, 'await refreshPapers()', 'createWrongPaper');
-mustInclude(createWrongPaperSource, 'await startPractice()', 'createWrongPaper');
+mustInclude(createWrongPaperSource, 'await startPractice({ paperId: savedPaper.id })', 'createWrongPaper');
 mustNotInclude(createWrongPaperSource, "id: 'wrongbook_custom'", 'createWrongPaper');
 
 mustInclude(html, 'wrongbookPager', 'html');
@@ -331,6 +348,12 @@ mustInclude(extractFunction(js, 'routeTo'), "view === 'favorites'", 'routeTo');
   'learning-insight-board',
   'trend-bars',
   'recommendation-list',
+  'feature-hub',
+  'launcher-panel',
+  'practice-shell',
+  'focus-hero',
+  'focus-layout',
+  'focus-side',
   '@media'
 ].forEach((text) => mustInclude(css, text, 'css'));
 
